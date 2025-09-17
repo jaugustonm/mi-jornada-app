@@ -1,3 +1,8 @@
+// ======================================================================
+// ARCHIVO COMPLETO Y ACTUALIZADO: js/services/firestore.js
+// Con nueva función getAssignedTasksForDate para solucionar permisos
+// ======================================================================
+
 import { db } from '../config/firebase-config.js';
 import { 
     collection, 
@@ -12,9 +17,12 @@ import {
     getDocs
 } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
+// --- REFERENCIAS A COLECCIONES ---
 const tasksCollection = collection(db, 'tasks');
 const usersCollection = collection(db, 'users');
-const reportsCollection = collection(db, 'dailyReports'); // ✅ NUEVO
+const reportsCollection = collection(db, 'dailyReports');
+
+// --- FUNCIONES PARA REPORTES ---
 
 /**
  * Guarda un resumen del reporte diario en la base de datos.
@@ -38,9 +46,44 @@ export const updateDocument = (collectionName, docId, dataToUpdate) => {
     return updateDoc(docRef, dataToUpdate);
 };
 
+// --- FUNCIONES PARA TAREAS ---
 
-// ... (El resto de funciones: getAssignedTasks, getTasksForReport, etc. no cambian)
-// ... Te los dejo aquí para que tengas el archivo completo
+/**
+ * ✅ NUEVA FUNCIÓN: Obtiene las tareas asignadas por un supervisor en una fecha específica.
+ * Esta función permite al supervisor generar reportes de las tareas que él asignó,
+ * evitando el problema de permisos al leer tareas de otros usuarios.
+ * @param {string} assignerId - El ID del supervisor que asignó las tareas.
+ * @param {Date} date - La fecha para la cual se quieren obtener las tareas.
+ * @returns {Promise<Array>} - Una promesa que resuelve con un array de tareas.
+ */
+export const getAssignedTasksForDate = async (assignerId, date) => {
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+    
+    // El supervisor puede leer las tareas que ÉL asignó (porque assignerId = su propio UID)
+    const q = query(
+        tasksCollection,
+        where("assignerId", "==", assignerId),
+        where("deadline", ">=", startOfDay),
+        where("deadline", "<=", endOfDay)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    const tasks = [];
+    querySnapshot.forEach((doc) => {
+        tasks.push({ id: doc.id, ...doc.data() });
+    });
+    return tasks;
+};
+
+/**
+ * Obtiene las tareas asignadas por un supervisor (tiempo real).
+ * @param {string} assignerId - El ID del supervisor.
+ * @param {function} callback - Función que se ejecuta cuando hay cambios.
+ * @returns {function} - Función para cancelar la suscripción.
+ */
 export const getAssignedTasks = (assignerId, callback) => {
     const q = query(tasksCollection, where("assignerId", "==", assignerId));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -53,17 +96,25 @@ export const getAssignedTasks = (assignerId, callback) => {
     return unsubscribe;
 };
 
+/**
+ * Obtiene las tareas de un usuario para generar reportes (una sola consulta).
+ * @param {string} userId - El ID del usuario.
+ * @param {Date} date - La fecha para filtrar las tareas.
+ * @returns {Promise<Array>} - Las tareas del usuario en esa fecha.
+ */
 export const getTasksForReport = async (userId, date) => {
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(date);
     endOfDay.setHours(23, 59, 59, 999);
+    
     const q = query(
         tasksCollection,
         where("assignedToId", "==", userId),
         where("deadline", ">=", startOfDay),
         where("deadline", "<=", endOfDay)
     );
+    
     const querySnapshot = await getDocs(q);
     const tasks = [];
     querySnapshot.forEach((doc) => {
@@ -72,17 +123,12 @@ export const getTasksForReport = async (userId, date) => {
     return tasks;
 };
 
-export const getUserProfile = async (userId) => {
-    const userDocRef = doc(db, 'users', userId);
-    const userDoc = await getDoc(userDocRef);
-    if (userDoc.exists()) {
-        return userDoc.data();
-    } else {
-        console.error("No se encontró el perfil del usuario.");
-        return null;
-    }
-};
-
+/**
+ * Obtiene las tareas asignadas a un usuario (tiempo real).
+ * @param {string} userId - El ID del usuario.
+ * @param {function} callback - Función que se ejecuta cuando hay cambios.
+ * @returns {function} - Función para cancelar la suscripción.
+ */
 export const getTasks = (userId, callback) => {
     const q = query(tasksCollection, where("assignedToId", "==", userId));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -95,7 +141,34 @@ export const getTasks = (userId, callback) => {
     return unsubscribe;
 };
 
+/**
+ * Crea una nueva tarea.
+ * @param {object} taskData - Los datos de la tarea.
+ * @returns {Promise} - Promesa de la operación de creación.
+ */
 export const createTask = (taskData) => {
-    const data = { ...taskData, createdAt: Timestamp.now(), status: 'pending' };
+    const data = { 
+        ...taskData, 
+        createdAt: Timestamp.now(), 
+        status: 'pending' 
+    };
     return addDoc(tasksCollection, data);
+};
+
+// --- FUNCIONES PARA USUARIOS ---
+
+/**
+ * Obtiene el perfil de un usuario.
+ * @param {string} userId - El ID del usuario.
+ * @returns {Promise<object|null>} - El perfil del usuario o null si no existe.
+ */
+export const getUserProfile = async (userId) => {
+    const userDocRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userDocRef);
+    if (userDoc.exists()) {
+        return userDoc.data();
+    } else {
+        console.error("No se encontró el perfil del usuario.");
+        return null;
+    }
 };
