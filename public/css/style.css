@@ -1,0 +1,249 @@
+/* ======================================================================
+   ARCHIVO COMPLETO Y ACTUALIZADO: css/style.css
+   ====================================================================== */
+
+/* --- Variables de Colores y Fuentes --- */
+:root {
+    --primary-color: #FF6B6B;
+    --secondary-color: #FFD93D;
+    --accent-color: #4ECDC4;
+    --background-color: #F7F9FB;
+    --text-color: #333;
+    --card-bg: #FFFFFF;
+    --font-main: 'Helvetica Neue', sans-serif;
+    --font-fun: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+}
+
+/* --- Estilos Generales --- */
+body {
+    font-family: var(--font-main);
+    background-color: var(--background-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 0 20px;
+}
+
+header {
+    padding: 20px;
+    text-align: center;
+    border-bottom: 2px solid #eee;
+}
+
+header h1 {
+    font-family: var(--font-fun);
+    color: var(--primary-color);
+    font-size: 2.5em;
+}
+
+main {
+    max-width: 800px;
+    margin: 20px auto;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ===============================================================
+  NUEVO: Estilos para el Reporte
+  ===============================================================
+*/
+.report-container {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+#generate-report-button {
+    padding: 12px 25px;
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    background-color: var(--primary-color);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#generate-report-button:hover {
+    background-color: #e63939;
+}
+
+#report-content {
+    text-align: left;
+    margin-top: 20px;
+}
+
+.report-stat {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+}
+
+.report-stat span {
+    font-weight: bold;
+    font-size: 1.5em;
+    color: var(--accent-color);
+}
+
+.report-unfulfilled-list {
+    list-style-type: none;
+    padding: 0;
+}
+
+.report-unfulfilled-list li {
+    background-color: #fff3f3;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 8px;
+    border-left: 4px solid var(--primary-color);
+}
+
+
+/* --- Estilos de las Tareas --- */
+.tasks-container h2 {
+    font-family: var(--font-fun);
+    color: var(--accent-color);
+}
+
+.task-card {
+    background: var(--card-bg);
+    border-radius: 15px;
+    padding: 15px 20px;
+    margin-bottom: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    border-left: 5px solid var(--secondary-color);
+}
+
+.task-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
+}
+
+.task-card.task-completed {
+    background-color: #e8f5e9;
+    opacity: 0.7;
+    border-left-color: #66BB6A;
+}
+
+.task-card.task-completed h3 {
+    text-decoration: line-through;
+    color: #888;
+}
+
+/* --- Botón Flotante (FAB) --- */
+.fab {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 30px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.fab:hover {
+    transform: scale(1.1);
+}
+
+/* --- Estilos para Modales --- */
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    max-width: 90%;
+    width: 500px;
+}
+
+#add-task-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    text-align: left;
+}
+
+#add-task-form input[type="text"],
+#add-task-form textarea,
+#add-task-form input[type="datetime-local"] {
+    width: 95%;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-family: var(--font-main);
+}
+
+#add-task-form textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+#add-task-form button {
+    padding: 12px;
+    border: none;
+    border-radius: 5px;
+    background-color: var(--accent-color);
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#camera-feed {
+    width: 100%;
+    max-width: 480px;
+    height: auto;
+    border-radius: 8px;
+    border: 2px solid #ddd;
+}
+
+.modal-content button {
+    margin-top: 15px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+}
+/* ... al final de la sección de Estilos de las Tareas ... */
+
+.task-actions button {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-right: 5px;
+    font-weight: bold;
+}
+
+.validate-btn {
+    background-color: #4CAF50; /* Verde */
+    color: white;
+}
+
+.reject-btn {
+    background-color: #f44336; /* Rojo */
+    color: white;
+}
+
+.status-validated {
+    color: #4CAF50;
+    font-weight: bold;
+}
