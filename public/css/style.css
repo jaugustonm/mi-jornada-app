@@ -1,5 +1,6 @@
 /* ======================================================================
    ARCHIVO COMPLETO Y ACTUALIZADO: css/style.css
+   Con estilos para reporte semanal y penalidad
    ====================================================================== */
 
 /* --- Variables de Colores y Fuentes --- */
@@ -45,7 +46,7 @@ main {
 }
 
 /* ===============================================================
-  NUEVO: Estilos para el Filtro de Fecha
+  Estilos para el Filtro de Fecha
   ===============================================================
 */
 .date-filter-container {
@@ -99,15 +100,20 @@ main {
 }
 
 /* ===============================================================
-  NUEVO: Estilos para el Reporte
+  Estilos para Reportes (Diario y Semanal)
   ===============================================================
 */
 .report-container {
     text-align: center;
     margin-bottom: 30px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
 }
 
-#generate-report-button {
+#generate-report-button,
+#generate-weekly-report-button {
     padding: 12px 25px;
     font-size: 16px;
     font-weight: bold;
@@ -119,11 +125,13 @@ main {
     transition: background-color 0.2s;
 }
 
-#generate-report-button:hover {
+#generate-report-button:hover,
+#generate-weekly-report-button:hover {
     background-color: #e63939;
 }
 
-#report-content {
+#report-content,
+#weekly-report-content {
     text-align: left;
     margin-top: 20px;
 }
@@ -150,6 +158,53 @@ main {
     border-radius: 5px;
     margin-bottom: 8px;
     border-left: 4px solid var(--primary-color);
+}
+
+/* --- Estilos para la Penalidad Semanal --- */
+
+.penalty-section {
+    margin-top: 25px;
+    padding: 15px;
+    border: 3px solid var(--primary-color);
+    border-radius: 10px;
+    background-color: #ffeaea; /* Rojo muy suave */
+}
+
+.penalty-section h3 {
+    color: var(--primary-color);
+    text-align: center;
+    font-family: var(--font-fun);
+}
+
+.penalty-text {
+    font-size: 1.1em;
+    color: #444;
+    margin-bottom: 15px;
+    font-style: italic;
+    border-left: 5px solid var(--primary-color);
+    padding-left: 10px;
+}
+
+.reflection-text {
+    font-size: 0.9em;
+    color: #666;
+    text-align: justify;
+    padding-top: 10px;
+}
+
+.congrats-section {
+    margin-top: 25px;
+    padding: 15px;
+    border: 3px solid var(--accent-color);
+    border-radius: 10px;
+    background-color: #e6fffb; /* Verde/Cian suave */
+    color: #00796b;
+    text-align: center;
+}
+
+.congrats-section h3 {
+    color: var(--accent-color);
+    font-family: var(--font-fun);
 }
 
 /* --- Estilos de las Tareas --- */

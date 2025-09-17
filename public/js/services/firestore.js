@@ -1,6 +1,6 @@
 // ======================================================================
 // ARCHIVO ACTUALIZADO: js/services/firestore.js
-// Con funciones que filtran por fecha específica
+// Con funciones que filtran por fecha específica y rango semanal
 // ======================================================================
 
 import { db } from '../config/firebase-config.js';
@@ -37,6 +37,27 @@ const getDayLimits = (date) => {
     return { startOfDay, endOfDay };
 };
 
+/**
+ * Obtiene los límites de la semana (Domingo 00:00:00.000 a Viernes 23:59:59.999)
+ * @param {Date} date - Una fecha dentro de la semana.
+ * @returns {object} - Objeto con startOfWeek y endOfWeek.
+ */
+const getWeekLimits = (date) => {
+    const day = date.getDay(); // 0 for Sunday, 1 for Monday, ..., 6 for Saturday
+    
+    // Calcula el inicio de la semana (Domingo)
+    const startOfWeek = new Date(date);
+    startOfWeek.setDate(date.getDate() - day); // Ir al domingo
+    startOfWeek.setHours(0, 0, 0, 0);
+    
+    // Calcula el fin de la semana (Viernes)
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 5); // 0 (Dom) + 5 = 5 (Vie)
+    endOfWeek.setHours(23, 59, 59, 999);
+    
+    return { startOfWeek, endOfWeek };
+};
+
 // --- FUNCIONES PARA REPORTES ---
 
 /**
@@ -64,7 +85,34 @@ export const updateDocument = (collectionName, docId, dataToUpdate) => {
 // --- FUNCIONES PARA TAREAS ---
 
 /**
- * ✅ NUEVA FUNCIÓN: Obtiene las tareas asignadas por un supervisor en una fecha específica.
+ * Obtiene TODAS las tareas de un usuario (o asignadas por supervisor) para una semana específica (Domingo-Viernes).
+ * @param {string} userId - El ID del usuario/supervisor.
+ * @param {Date} date - Una fecha dentro de la semana para la cual se quieren obtener las tareas.
+ * @param {boolean} isSupervisor - Indica si se buscan tareas asignadas (supervisor) o propias (supervisado).
+ * @returns {Promise<Array>} - Una promesa que resuelve con un array de tareas.
+ */
+export const getTasksForWeeklyReport = async (userId, date, isSupervisor) => {
+    const { startOfWeek, endOfWeek } = getWeekLimits(date);
+    
+    const fieldToQuery = isSupervisor ? "assignerId" : "assignedToId";
+    
+    const q = query(
+        tasksCollection,
+        where(fieldToQuery, "==", userId),
+        where("deadline", ">=", startOfWeek),
+        where("deadline", "<=", endOfWeek)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    const tasks = [];
+    querySnapshot.forEach((doc) => {
+        tasks.push({ id: doc.id, ...doc.data() });
+    });
+    return tasks;
+};
+
+/**
+ * Obtiene las tareas asignadas por un supervisor en una fecha específica.
  * @param {string} assignerId - El ID del supervisor que asignó las tareas.
  * @param {Date} date - La fecha para la cual se quieren obtener las tareas.
  * @returns {Promise<Array>} - Una promesa que resuelve con un array de tareas.
@@ -88,7 +136,7 @@ export const getAssignedTasksForDate = async (assignerId, date) => {
 };
 
 /**
- * ✅ FUNCIÓN ACTUALIZADA: Obtiene las tareas asignadas por un supervisor para una fecha específica (tiempo real).
+ * FUNCIÓN ACTUALIZADA: Obtiene las tareas asignadas por un supervisor para una fecha específica (tiempo real).
  * @param {string} assignerId - El ID del supervisor.
  * @param {Date} selectedDate - La fecha seleccionada.
  * @param {function} callback - Función que se ejecuta cuando hay cambios.
@@ -157,7 +205,7 @@ export const getTasksForReport = async (userId, date) => {
 };
 
 /**
- * ✅ FUNCIÓN ACTUALIZADA: Obtiene las tareas de un usuario para una fecha específica (tiempo real).
+ * FUNCIÓN ACTUALIZADA: Obtiene las tareas de un usuario para una fecha específica (tiempo real).
  * @param {string} userId - El ID del usuario.
  * @param {Date} selectedDate - La fecha seleccionada.
  * @param {function} callback - Función que se ejecuta cuando hay cambios.

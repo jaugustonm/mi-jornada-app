@@ -31,7 +31,6 @@
         </section>
 
         <section id="app-view" class="hidden">
-            <!-- NUEVO: Filtro de fecha -->
             <div class="date-filter-container">
                 <label for="date-filter">Ver tareas del día:</label>
                 <input type="date" id="date-filter">
@@ -40,9 +39,9 @@
 
             <div class="report-container">
                 <button id="generate-report-button">Generar Reporte del Día</button>
+                <button id="generate-weekly-report-button">Generar Reporte Semanal</button>
             </div>
 
-            <!-- NUEVO: Mostrar fecha seleccionada -->
             <div id="selected-date-display" class="selected-date">
                 Mostrando tareas del: <span id="selected-date-text"></span>
             </div>
@@ -93,6 +92,16 @@
                 <button id="assign-reward-button">Asignar Recompensa</button>
             </div>
             <button id="close-report-button">Cerrar</button>
+        </div>
+    </div>
+    
+    <div id="weekly-report-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Reporte Semanal de Cumplimiento</h2>
+            <div id="weekly-report-content"></div>
+            <div id="weekly-report-actions" class="hidden">
+            </div>
+            <button id="close-weekly-report-button">Cerrar</button>
         </div>
     </div>
 

@@ -1,6 +1,6 @@
 // ======================================================================
 // ARCHIVO COMPLETO: js/main.js
-// Con filtro de fecha para mostrar tareas del día seleccionado
+// Con filtro de fecha y reporte semanal
 // ======================================================================
 
 // --- IMPORTACIONES ---
@@ -15,7 +15,8 @@ import {
     getAssignedTasks, 
     getAssignedTasksByDate,
     saveDailyReport, 
-    getAssignedTasksForDate 
+    getAssignedTasksForDate,
+    getTasksForWeeklyReport
 } from './services/firestore.js';
 import { renderTask } from './ui/components.js';
 import { uploadImage } from './services/cloudinary.js';
@@ -38,6 +39,8 @@ const cameraFeed = document.getElementById('camera-feed');
 const photoCanvas = document.getElementById('photo-canvas');
 const captureButton = document.getElementById('capture-button');
 const uploadButton = document.getElementById('upload-button');
+
+// ELEMENTOS PARA EL REPORTE DIARIO
 const generateReportButton = document.getElementById('generate-report-button');
 const reportModal = document.getElementById('report-modal');
 const reportContent = document.getElementById('report-content');
@@ -47,7 +50,14 @@ const assignRewardButton = document.getElementById('assign-reward-button');
 const rewardModal = document.getElementById('reward-modal');
 const rewardForm = document.getElementById('reward-form');
 
-// ✅ ELEMENTOS PARA EL FILTRO DE FECHA
+// ELEMENTOS PARA EL REPORTE SEMANAL
+const generateWeeklyReportButton = document.getElementById('generate-weekly-report-button');
+const weeklyReportModal = document.getElementById('weekly-report-modal');
+const weeklyReportContent = document.getElementById('weekly-report-content');
+const closeWeeklyReportButton = document.getElementById('close-weekly-report-button');
+const weeklyReportActions = document.getElementById('weekly-report-actions');
+
+// ELEMENTOS PARA EL FILTRO DE FECHA
 const dateFilter = document.getElementById('date-filter');
 const todayButton = document.getElementById('today-button');
 const selectedDateText = document.getElementById('selected-date-text');
@@ -59,7 +69,7 @@ let currentTaskId = null;
 let stream = null;
 let unsubscribe = null;
 let currentReportId = null;
-let selectedDate = new Date(); // ✅ FECHA SELECCIONADA
+let selectedDate = new Date(); // FECHA SELECCIONADA
 
 // --- FUNCIONES AUXILIARES PARA FECHAS ---
 
@@ -89,6 +99,27 @@ const formatDateForInput = (date) => {
 const updateSelectedDateDisplay = () => {
     selectedDateText.textContent = formatDateForDisplay(selectedDate);
     dateFilter.value = formatDateForInput(selectedDate);
+};
+
+/**
+ * Obtiene los límites de la semana (Domingo 00:00:00.000 a Viernes 23:59:59.999)
+ * @param {Date} date - Una fecha dentro de la semana.
+ * @returns {object} - Objeto con startOfWeek y endOfWeek.
+ */
+const getWeekLimits = (date) => {
+    const day = date.getDay(); // 0 for Sunday, 1 for Monday, ..., 6 for Saturday
+    
+    // Calcula el inicio de la semana (Domingo)
+    const startOfWeek = new Date(date);
+    startOfWeek.setDate(date.getDate() - day); // Ir al domingo
+    startOfWeek.setHours(0, 0, 0, 0);
+    
+    // Calcula el fin de la semana (Viernes)
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 5); // 0 (Dom) + 5 = 5 (Vie)
+    endOfWeek.setHours(23, 59, 59, 999);
+    
+    return { startOfWeek, endOfWeek };
 };
 
 /**
@@ -289,6 +320,83 @@ const generateReport = async () => {
 };
 
 /**
+ * Genera el reporte semanal
+ */
+const generateWeeklyReport = async () => {
+    if (!currentUser || !currentUserProfile) return;
+    
+    // 1. Obtener la hora actual para determinar el día de la semana
+    const today = new Date(); 
+    const dayOfWeek = today.getDay(); // 0 = Sunday, 6 = Saturday
+    const isSaturday = dayOfWeek === 6;
+    
+    // 2. Obtener tareas de la semana de la fecha seleccionada (selectedDate)
+    const isSupervisor = currentUserProfile.role === 'supervisor';
+    let tasks = [];
+    
+    try {
+        tasks = await getTasksForWeeklyReport(currentUser.uid, selectedDate, isSupervisor);
+        
+        // 3. Calcular estadísticas semanales
+        const totalTasks = tasks.length;
+        const completedTasks = tasks.filter(t => t.status === 'completed' || t.status === 'validated').length;
+        const percentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+        
+        let reportHTML = '';
+        
+        // 4. Determinar el rango de la semana y el estado del reporte
+        const { startOfWeek, endOfWeek } = getWeekLimits(selectedDate);
+        
+        // Formato para mostrar solo día y mes/año (ej: Domingo, 15 de Septiembre)
+        const dateOptions = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' };
+        const startDateDisplay = startOfWeek.toLocaleDateString('es-ES', dateOptions);
+        const endDateDisplay = endOfWeek.toLocaleDateString('es-ES', dateOptions);
+        
+        reportHTML += `
+            <div class="report-stat">
+                Semana: <span>${startDateDisplay.split(',')[0]} - ${endDateDisplay.split(',')[0]}</span>
+            </div>
+            <div class="report-stat">
+                Estado: <span>${isSaturday ? 'Definitivo' : 'Parcial'}</span>
+            </div>
+            <div class="report-stat">
+                Tareas completadas: <span>${completedTasks} / ${totalTasks}</span>
+            </div>
+            <div class="report-stat">
+                Porcentaje de cumplimiento: <span>${percentage}%</span>
+            </div>
+        `;
+        
+        // 5. Lógica de Penalidad (solo si es Sábado y porcentaje < 80%)
+        if (isSaturday && percentage < 80) {
+            const penalty = `
+                <div class="penalty-section">
+                    <h3>⚠️ Penalidad Activa</h3>
+                    <p class="penalty-text">"El usuario deberá realizar todas las labores del hogar durante sábado y domingo, sin que nadie más las asuma en su lugar. El cumplimiento o incumplimiento afectará a todos, recordando que la negligencia siempre pesa sobre otros."</p>
+                    <hr>
+                    <p class="reflection-text">Reflexión: Esta carga no se limita al esfuerzo físico: busca enseñar que la fidelidad en lo pequeño libera, mientras que la evasión del deber esclaviza. Las tareas del hogar, asumidas en silencio y sin delegar, son un ejercicio de servicio, purificación y disciplina interior. Lo que parece castigo se transforma en camino de corrección y crecimiento en virtud.</p>
+                </div>
+            `;
+            reportHTML += penalty;
+        } else if (isSaturday) {
+             reportHTML += `
+                <div class="congrats-section">
+                    <h3>¡Felicidades! 🎉</h3>
+                    <p>Has superado el 80% de cumplimiento semanal. No hay penalidad y se considera un buen esfuerzo.</p>
+                </div>
+            `;
+        }
+        
+        weeklyReportContent.innerHTML = reportHTML;
+        weeklyReportModal.classList.remove('hidden');
+        
+    } catch (error) {
+        console.error("Error generando el reporte semanal:", error);
+        alert("Error al generar el reporte semanal");
+    }
+};
+
+/**
  * Maneja la asignación de recompensas
  */
 const handleRewardAssignment = async (e) => {
@@ -366,14 +474,14 @@ document.addEventListener('DOMContentLoaded', () => {
     loginForm.addEventListener('submit', handleLogin);
     logoutButton.addEventListener('click', logout);
     
-    // ✅ FILTRO DE FECHA
+    // FILTRO DE FECHA
     dateFilter.addEventListener('change', (e) => {
         selectedDate = new Date(e.target.value + 'T00:00:00');
         updateSelectedDateDisplay();
         loadTasksForSelectedDate();
     });
     
-    // ✅ BOTÓN PARA IR A HOY
+    // BOTÓN PARA IR A HOY
     todayButton.addEventListener('click', () => {
         selectedDate = new Date();
         updateSelectedDateDisplay();
@@ -388,11 +496,15 @@ document.addEventListener('DOMContentLoaded', () => {
     captureButton.addEventListener('click', capturePhoto);
     uploadButton.addEventListener('click', uploadEvidence);
     
-    // Reportes
+    // Reportes Diarios
     generateReportButton.addEventListener('click', generateReport);
     closeReportButton.addEventListener('click', () => reportModal.classList.add('hidden'));
     assignRewardButton.addEventListener('click', () => rewardModal.classList.remove('hidden'));
     rewardForm.addEventListener('submit', handleRewardAssignment);
+
+    // Reportes Semanales
+    generateWeeklyReportButton.addEventListener('click', generateWeeklyReport);
+    closeWeeklyReportButton.addEventListener('click', () => weeklyReportModal.classList.add('hidden'));
     
     // Cerrar modales al hacer clic fuera
     document.addEventListener('click', (e) => {
