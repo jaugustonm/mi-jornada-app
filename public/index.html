@@ -31,9 +31,22 @@
         </section>
 
         <section id="app-view" class="hidden">
+            <!-- NUEVO: Filtro de fecha -->
+            <div class="date-filter-container">
+                <label for="date-filter">Ver tareas del día:</label>
+                <input type="date" id="date-filter">
+                <button id="today-button">Hoy</button>
+            </div>
+
             <div class="report-container">
                 <button id="generate-report-button">Generar Reporte del Día</button>
             </div>
+
+            <!-- NUEVO: Mostrar fecha seleccionada -->
+            <div id="selected-date-display" class="selected-date">
+                Mostrando tareas del: <span id="selected-date-text"></span>
+            </div>
+
             <div class="tasks-container">
                 <h2>Tareas de la Mañana</h2>
                 <div id="morning-tasks" class="task-list"></div>

@@ -45,6 +45,60 @@ main {
 }
 
 /* ===============================================================
+  NUEVO: Estilos para el Filtro de Fecha
+  ===============================================================
+*/
+.date-filter-container {
+    background-color: var(--card-bg);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.date-filter-container label {
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+#date-filter {
+    padding: 8px 12px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    min-width: 150px;
+}
+
+#today-button {
+    padding: 8px 16px;
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+#today-button:hover {
+    background-color: #3ba59c;
+}
+
+.selected-date {
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: #e3f2fd;
+    border-radius: 8px;
+    font-weight: bold;
+    color: #1976d2;
+}
+
+/* ===============================================================
   NUEVO: Estilos para el Reporte
   ===============================================================
 */
@@ -97,7 +151,6 @@ main {
     margin-bottom: 8px;
     border-left: 4px solid var(--primary-color);
 }
-
 
 /* --- Estilos de las Tareas --- */
 .tasks-container h2 {
@@ -222,7 +275,6 @@ main {
     font-size: 16px;
     cursor: pointer;
 }
-/* ... al final de la sección de Estilos de las Tareas ... */
 
 .task-actions button {
     padding: 8px 12px;
