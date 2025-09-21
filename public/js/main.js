@@ -1,7 +1,7 @@
 // ======================================================================
 // ARCHIVO COMPLETO Y CORREGIDO: js/main.js
 // VERSIÓN COMPLETA - Restaura todo el código original e implementa
-// correctamente el flujo de negociación de penalidades.
+// correctamente el flujo de negociación de penalidades y comentarios.
 // ======================================================================
 
 // --- IMPORTACIONES ---
@@ -19,7 +19,8 @@ import {
     getAssignedTasksForDate,
     getTasksForWeeklyReport,
     deleteTask,
-    getTaskById // Aseguramos que esta función se importa
+    getTaskById,
+    addCommentToTask // NUEVO: Importamos la función de comentarios
 } from './services/firestore.js';
 import { renderTask } from './ui/components.js';
 import { uploadImage } from './services/cloudinary.js';
@@ -42,6 +43,8 @@ const cameraFeed = document.getElementById('camera-feed');
 const photoCanvas = document.getElementById('photo-canvas');
 const captureButton = document.getElementById('capture-button');
 const uploadButton = document.getElementById('upload-button');
+const commentModal = document.getElementById('comment-modal'); // NUEVO
+const commentForm = document.getElementById('comment-form'); // NUEVO
 
 // ELEMENTOS PARA EL REPORTE DIARIO
 const generateReportButton = document.getElementById('generate-report-button');
@@ -616,6 +619,21 @@ document.addEventListener('DOMContentLoaded', () => {
     negotiationForm.addEventListener('submit', handleNegotiation);
     rewardForm.addEventListener('submit', handleRewardAssignment);
     finalPenaltyForm.addEventListener('submit', handleFinalPenalty);
+    commentForm.addEventListener('submit', async (e) => { // NUEVO
+        e.preventDefault();
+        const commentText = document.getElementById('comment-text').value;
+        if (commentText.trim() && currentTaskId && currentUser) {
+            await addCommentToTask(currentTaskId, {
+                text: commentText,
+                authorId: currentUser.uid,
+                authorEmail: currentUser.email
+            });
+            commentModal.classList.add('hidden');
+            commentForm.reset();
+            currentTaskId = null;
+        }
+    });
+
 
     // Filtros de fecha
     dateFilter.addEventListener('change', (e) => {
@@ -668,6 +686,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (e.target.classList.contains('evidence-btn')) {
             currentTaskId = taskId;
             openCamera();
+        } else if (e.target.classList.contains('add-comment-btn')) { // NUEVO
+            currentTaskId = taskId;
+            commentModal.classList.remove('hidden');
         } else if (e.target.classList.contains('accept-btn')) {
             await updateDocument('tasks', taskId, {
                 status: 'pending',

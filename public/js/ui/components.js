@@ -1,3 +1,5 @@
+import { getCommentsForTask } from '../services/firestore.js';
+
 /**
  * Genera el HTML para una sola tarjeta de tarea, mostrando diferentes acciones
  * según el rol del usuario y el estado de la tarea.
@@ -54,41 +56,48 @@ export const renderTask = (task, userRole) => {
 
         // Vistas para el Supervisor
         if (userRole === 'supervisor') {
+            let supervisorButtons = `<button class="add-comment-btn">💬 Añadir Comentario</button>`;
             switch (task.status) {
                 case 'completed':
-                    return `
+                    supervisorButtons += `
                         <button class="validate-btn">👍 Validar</button>
                         <button class="reject-btn">👎 Rechazar</button>
                     `;
+                    break;
                 case 'counter-proposed':
                     if (proposalCounts.supervisor < 2) {
-                        return `
+                        supervisorButtons += `
                             <button class="accept-proposal-btn">✔️ Aceptar Propuesta</button>
                             <button class="reject-proposal-btn">✖️ Rechazar Propuesta</button>
                         `;
                     } else {
                         // Si el supervisor ya no tiene propuestas, debe definir la penalidad final
-                        return `<button class="set-final-penalty-btn">Definir Penalidad Final</button>`;
+                        supervisorButtons += `<button class="set-final-penalty-btn">Definir Penalidad Final</button>`;
                     }
+                    break;
                  case 'pending_acceptance':
-                    return `<p class="status-negotiation">Esperando respuesta del supervisado...</p>`;
+                     supervisorButtons += `<p class="status-negotiation">Esperando respuesta del supervisado...</p>`;
+                     break;
                  case 'rejected':
                     // **CORRECCIÓN CLAVE AQUÍ:** Dar al supervisor una acción cuando la penalidad es rechazada.
                     if (proposalCounts.supervisor < 2) {
-                        return `<button class="reject-proposal-btn">↪️ Hacer Contrapropuesta</button>`;
+                        supervisorButtons += `<button class="reject-proposal-btn">↪️ Hacer Contrapropuesta</button>`;
                     } else {
-                        return `<button class="set-final-penalty-btn">Definir Penalidad Final</button>`;
+                        supervisorButtons += `<button class="set-final-penalty-btn">Definir Penalidad Final</button>`;
                     }
+                    break;
                  case 'negotiation_locked':
-                    return `<button class="set-final-penalty-btn">Definir Penalidad Final</button>`;
+                     supervisorButtons += `<button class="set-final-penalty-btn">Definir Penalidad Final</button>`;
+                     break;
             }
+            return supervisorButtons;
         }
 
         if (task.status === 'validated') {
             return `<p class="status-validated">Tarea Validada ✔️</p>`;
         }
         
-        if (task.status !== 'completed' && task.status !== 'validated') {
+        if (userRole === 'supervisado' && task.status !== 'completed' && task.status !== 'validated') {
              return `<button class="evidence-btn">📸 Subir Evidencia</button>`;
         }
 
@@ -106,6 +115,23 @@ export const renderTask = (task, userRole) => {
         `;
     }
 
+    // Cargar y mostrar comentarios
+    setTimeout(() => {
+        const commentsContainer = document.querySelector(`.task-card[data-id="${task.id}"] .task-comments-container`);
+        if (commentsContainer) {
+            getCommentsForTask(task.id, (comments) => {
+                commentsContainer.innerHTML = '<h4>Comentarios:</h4>';
+                if (comments.length > 0) {
+                    comments.forEach(comment => {
+                        commentsContainer.innerHTML += `<div class="task-comment">${comment.text}</div>`;
+                    });
+                } else {
+                    commentsContainer.innerHTML += `<p>No hay comentarios.</p>`;
+                }
+            });
+        }
+    }, 0);
+
     return `
         <div class="task-card ${statusClass}" data-id="${task.id}">
             <h3>${task.title} ${isMandatory} ${isPenalty}</h3>
@@ -114,6 +140,8 @@ export const renderTask = (task, userRole) => {
             <div class="task-actions">
                 ${getActionButtons()}
             </div>
+            <div class="task-comments-container">
+                </div>
             ${task.evidence?.url ? `<a href="${task.evidence.url}" target="_blank">Ver evidencia</a>` : ''}
         </div>
     `;

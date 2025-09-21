@@ -1,6 +1,6 @@
 /* ======================================================================
    ARCHIVO COMPLETO Y ACTUALIZADO: css/style.css
-   Con estilos para negociación de penalidades.
+   Con estilos para negociación de penalidades y comentarios.
    ====================================================================== */
 
 /* --- Variables de Colores y Fuentes --- */
@@ -247,6 +247,20 @@ main {
     border-left: 4px solid #FFC107;
 }
 
+.task-comments-container {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+}
+
+.task-comment {
+    background-color: #f9f9f9;
+    padding: 8px;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    font-size: 0.9em;
+}
+
 /* --- Botón Flotante (FAB) --- */
 .fab {
     position: fixed;
@@ -299,7 +313,7 @@ main {
     margin-top: 20px;
 }
 
-#add-task-form, #penalty-form, #negotiation-form, #final-penalty-form {
+#add-task-form, #penalty-form, #negotiation-form, #final-penalty-form, #comment-form {
     display: flex;
     flex-direction: column;
     gap: 15px;
@@ -313,7 +327,8 @@ main {
 #add-task-form textarea,
 #penalty-form textarea,
 #negotiation-form textarea,
-#final-penalty-form textarea {
+#final-penalty-form textarea,
+#comment-form textarea {
     width: 95%;
     padding: 10px;
     border-radius: 5px;
@@ -321,12 +336,12 @@ main {
     font-family: var(--font-main);
 }
 
-#add-task-form textarea, #penalty-form textarea, #negotiation-form textarea, #final-penalty-form textarea {
+#add-task-form textarea, #penalty-form textarea, #negotiation-form textarea, #final-penalty-form textarea, #comment-form textarea {
     min-height: 80px;
     resize: vertical;
 }
 
-#add-task-form button, #penalty-form button, #negotiation-form button, #final-penalty-form button {
+#add-task-form button, #penalty-form button, #negotiation-form button, #final-penalty-form button, #comment-form button {
     padding: 12px;
     border: none;
     border-radius: 5px;
@@ -368,6 +383,7 @@ main {
 .decline-btn, .reject-proposal-btn { background-color: #f44336; color: white; }
 .propose-alternative-btn { background-color: #FFC107; color: var(--text-color); }
 .status-negotiation { font-style: italic; color: #666; }
+.add-comment-btn { background-color: #2196F3; color: white; }
 
 #restore-original-penalty-btn { background-color: var(--secondary-color); color: var(--text-color); }
 #propose-new-penalty-btn { background-color: var(--accent-color); color: white; }

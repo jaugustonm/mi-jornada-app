@@ -1,6 +1,6 @@
 // ======================================================================
 // ARCHIVO ACTUALIZADO: js/services/firestore.js
-// Con funciones que filtran por fecha específica y rango semanal
+// Con funciones para filtrar por fecha, rango semanal y manejar comentarios.
 // ======================================================================
 
 import { db } from '../config/firebase-config.js';
@@ -15,13 +15,15 @@ import {
     Timestamp,
     getDoc,
     getDocs,
-    deleteDoc // NUEVO: Importamos deleteDoc
+    deleteDoc,
+    orderBy // NUEVO: Para ordenar comentarios
 } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
 // --- REFERENCIAS A COLECCIONES ---
 const tasksCollection = collection(db, 'tasks');
 const usersCollection = collection(db, 'users');
 const reportsCollection = collection(db, 'dailyReports');
+const commentsCollection = collection(db, 'taskComments'); // NUEVO: Colección de comentarios
 
 // --- FUNCIONES AUXILIARES PARA FECHAS ---
 
@@ -58,6 +60,45 @@ const getWeekLimits = (date) => {
 
     return { startOfWeek, endOfWeek };
 };
+
+// --- FUNCIONES PARA COMENTARIOS ---
+
+/**
+ * Añade un comentario a una tarea.
+ * @param {string} taskId - El ID de la tarea.
+ * @param {object} commentData - Datos del comentario (texto, autor, etc.).
+ * @returns {Promise}
+ */
+export const addCommentToTask = (taskId, commentData) => {
+    return addDoc(commentsCollection, {
+        taskId,
+        ...commentData,
+        createdAt: Timestamp.now()
+    });
+};
+
+/**
+ * Obtiene los comentarios de una tarea en tiempo real.
+ * @param {string} taskId - El ID de la tarea.
+ * @param {function} callback - Función que se ejecuta con los comentarios.
+ * @returns {function} - Función para cancelar la suscripción.
+ */
+export const getCommentsForTask = (taskId, callback) => {
+    const q = query(
+        commentsCollection,
+        where("taskId", "==", taskId),
+        orderBy("createdAt", "asc")
+    );
+
+    return onSnapshot(q, (snapshot) => {
+        const comments = [];
+        snapshot.forEach(doc => {
+            comments.push({ id: doc.id, ...doc.data() });
+        });
+        callback(comments);
+    });
+};
+
 
 // --- FUNCIONES PARA REPORTES ---
 
