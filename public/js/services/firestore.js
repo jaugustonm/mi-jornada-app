@@ -86,6 +86,17 @@ export const updateDocument = (collectionName, docId, dataToUpdate) => {
 // --- FUNCIONES PARA TAREAS ---
 
 /**
+ * Obtiene una tarea específica por su ID.
+ * @param {string} taskId - El ID de la tarea.
+ * @returns {Promise<DocumentSnapshot>} - El snapshot del documento de la tarea.
+ */
+export const getTaskById = (taskId) => {
+    const docRef = doc(db, 'tasks', taskId);
+    return getDoc(docRef);
+};
+
+
+/**
  * Obtiene TODAS las tareas de un usuario (o asignadas por supervisor) para una semana específica (Domingo-Viernes).
  * @param {string} userId - El ID del usuario/supervisor.
  * @param {Date} date - Una fecha dentro de la semana para la cual se quieren obtener las tareas.

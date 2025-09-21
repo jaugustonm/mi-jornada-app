@@ -1,6 +1,7 @@
 // ======================================================================
 // ARCHIVO COMPLETO Y CORREGIDO: js/main.js
-// Soluciona el error de permisos al rechazar una penalidad.
+// VERSIÓN COMPLETA - Restaura todo el código original e implementa
+// correctamente el flujo de negociación de penalidades.
 // ======================================================================
 
 // --- IMPORTACIONES ---
@@ -17,7 +18,8 @@ import {
     saveDailyReport,
     getAssignedTasksForDate,
     getTasksForWeeklyReport,
-    deleteTask
+    deleteTask,
+    getTaskById // Aseguramos que esta función se importa
 } from './services/firestore.js';
 import { renderTask } from './ui/components.js';
 import { uploadImage } from './services/cloudinary.js';
@@ -67,14 +69,27 @@ const dateFilter = document.getElementById('date-filter');
 const todayButton = document.getElementById('today-button');
 const selectedDateText = document.getElementById('selected-date-text');
 
+// ELEMENTOS PARA NEGOCIACIÓN
+const negotiationModal = document.getElementById('negotiation-modal');
+const negotiationForm = document.getElementById('negotiation-form');
+const negotiationModalTitle = document.getElementById('negotiation-modal-title');
+const supervisorRejectionModal = document.getElementById('supervisor-rejection-options-modal');
+const restoreOriginalPenaltyBtn = document.getElementById('restore-original-penalty-btn');
+const proposeNewPenaltyBtn = document.getElementById('propose-new-penalty-btn');
+
 // --- VARIABLES GLOBALES ---
 let currentUser = null;
 let currentUserProfile = null;
-let currentTaskId = null;
+let currentTaskId = null; // Se mantiene para la cámara y otras acciones
 let stream = null;
 let unsubscribe = null;
 let currentReportId = null;
 let selectedDate = new Date(); // FECHA SELECCIONADA
+let negotiationContext = {
+    taskId: null,
+    isSupervisorCounter: false
+};
+
 
 // --- FUNCIONES AUXILIARES PARA FECHAS ---
 
@@ -168,6 +183,8 @@ const displayTasks = (tasks) => {
         morningTasksContainer.innerHTML = noTasksMessage;
         return;
     }
+
+    tasks.sort((a, b) => (a.deadline?.toDate() || 0) - (b.deadline?.toDate() || 0));
 
     tasks.forEach(task => {
         const deadlineHour = task.deadline?.toDate().getHours() || 12;
@@ -285,7 +302,6 @@ const generateReport = async () => {
             </div>
         `;
 
-        // Lógica de recompensa y penalidad
         if (currentUserProfile.role === 'supervisor') {
             if (percentage >= 80) {
                 reportActions.classList.remove('hidden');
@@ -295,7 +311,6 @@ const generateReport = async () => {
                 penaltyActions.classList.remove('hidden');
             }
         } else {
-            // El usuario supervisado solo ve su reporte, no las acciones
             reportActions.classList.add('hidden');
             penaltyActions.classList.add('hidden');
         }
@@ -303,7 +318,6 @@ const generateReport = async () => {
         reportContent.innerHTML = reportHTML;
         reportModal.classList.remove('hidden');
 
-        // Guardar el reporte en la base de datos
         const reportData = {
             userId: currentUserProfile.role === 'supervisor' ? currentUser.uid : currentUser.uid,
             date: selectedDate,
@@ -330,34 +344,24 @@ const generateReport = async () => {
 const generateWeeklyReport = async () => {
     if (!currentUser || !currentUserProfile) return;
 
-    // 1. Obtener la hora actual para determinar el día de la semana
     const today = new Date();
-    const dayOfWeek = today.getDay(); // 0 = Sunday, 6 = Saturday
-    const isSaturday = dayOfWeek === 6;
-
-    // 2. Obtener tareas de la semana de la fecha seleccionada (selectedDate)
+    const isSaturday = today.getDay() === 6;
     const isSupervisor = currentUserProfile.role === 'supervisor';
     let tasks = [];
 
     try {
         tasks = await getTasksForWeeklyReport(currentUser.uid, selectedDate, isSupervisor);
 
-        // 3. Calcular estadísticas semanales
         const totalTasks = tasks.length;
         const completedTasks = tasks.filter(t => t.status === 'completed' || t.status === 'validated').length;
         const percentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-        let reportHTML = '';
-
-        // 4. Determinar el rango de la semana y el estado del reporte
         const { startOfWeek, endOfWeek } = getWeekLimits(selectedDate);
-
-        // Formato para mostrar solo día y mes/año (ej: Domingo, 15 de Septiembre)
         const dateOptions = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' };
         const startDateDisplay = startOfWeek.toLocaleDateString('es-ES', dateOptions);
         const endDateDisplay = endOfWeek.toLocaleDateString('es-ES', dateOptions);
 
-        reportHTML += `
+        let reportHTML = `
             <div class="report-stat">
                 Semana: <span>${startDateDisplay.split(',')[0]} - ${endDateDisplay.split(',')[0]}</span>
             </div>
@@ -372,24 +376,20 @@ const generateWeeklyReport = async () => {
             </div>
         `;
 
-        // 5. Lógica de Penalidad (solo si es Sábado y porcentaje < 80%)
         if (isSaturday && percentage < 80) {
-            const penalty = `
+            reportHTML += `
                 <div class="penalty-section">
                     <h3>⚠️ Penalidad Activa</h3>
                     <p class="penalty-text">"El usuario deberá realizar todas las labores del hogar durante sábado y domingo, sin que nadie más las asuma en su lugar. El cumplimiento o incumplimiento afectará a todos, recordando que la negligencia siempre pesa sobre otros."</p>
                     <hr>
                     <p class="reflection-text">Reflexión: Esta carga no se limita al esfuerzo físico: busca enseñar que la fidelidad en lo pequeño libera, mientras que la evasión del deber esclaviza. Las tareas del hogar, asumidas en silencio y sin delegar, son un ejercicio de servicio, purificación y disciplina interior. Lo que parece castigo se transforma en camino de corrección y crecimiento en virtud.</p>
-                </div>
-            `;
-            reportHTML += penalty;
+                </div>`;
         } else if (isSaturday) {
              reportHTML += `
                 <div class="congrats-section">
                     <h3>¡Felicidades! 🎉</h3>
                     <p>Has superado el 80% de cumplimiento semanal. No hay penalidad y se considera un buen esfuerzo.</p>
-                </div>
-            `;
+                </div>`;
         }
 
         weeklyReportContent.innerHTML = reportHTML;
@@ -413,7 +413,6 @@ const handleRewardAssignment = async (e) => {
             reward: rewardText,
             rewardAssignedAt: new Date()
         });
-
         alert("Recompensa asignada exitosamente");
         rewardModal.classList.add('hidden');
         reportModal.classList.add('hidden');
@@ -426,28 +425,18 @@ const handleRewardAssignment = async (e) => {
  */
 const handlePenaltySuggestion = async (e) => {
     e.preventDefault();
-
     const title = document.getElementById('penalty-title').value;
     const description = document.getElementById('penalty-description').value;
     const deadline = document.getElementById('penalty-deadline').value;
-
     const assignedToId = currentUserProfile.supervisingId;
-
     if (!assignedToId) {
         alert("Error: No se ha encontrado un usuario supervisado asignado a tu perfil.");
         return;
     }
-
     const penaltyData = {
-        title,
-        description,
-        deadline: new Date(deadline),
-        isMandatory: true,
-        assignerId: currentUser.uid,
-        assignedToId: assignedToId,
-        status: 'pending_acceptance'
+        title, description, deadline: new Date(deadline), isMandatory: true,
+        assignerId: currentUser.uid, assignedToId: assignedToId, status: 'pending_acceptance'
     };
-
     try {
         await createTask(penaltyData);
         alert("Penalidad sugerida exitosamente");
@@ -460,35 +449,53 @@ const handlePenaltySuggestion = async (e) => {
 };
 
 /**
+ * Maneja el envío del formulario de negociación (tanto del supervisado como del supervisor)
+ */
+const handleNegotiation = async (e) => {
+    e.preventDefault();
+    const title = document.getElementById('negotiation-title').value;
+    const description = document.getElementById('negotiation-description').value;
+    const { taskId, isSupervisorCounter } = negotiationContext;
+
+    if (taskId && title && description) {
+        if (isSupervisorCounter) {
+            // El supervisor está haciendo una contrapropuesta
+            await updateDocument('tasks', taskId, {
+                title, description, status: 'pending_acceptance', counterProposal: null
+            });
+            alert("Contrapropuesta enviada al supervisado.");
+        } else {
+            // El supervisado está haciendo la propuesta inicial
+            await updateDocument('tasks', taskId, {
+                status: 'counter-proposed',
+                counterProposal: { title, description }
+            });
+            alert("Contrapropuesta enviada al supervisor.");
+        }
+        negotiationModal.classList.add('hidden');
+        negotiationForm.reset();
+        negotiationContext = { taskId: null, isSupervisorCounter: false }; // Reset context
+    }
+};
+
+/**
  * Maneja la creación de nuevas tareas
  */
 const handleTaskCreation = async (e) => {
     e.preventDefault();
-
     const title = document.getElementById('task-title').value;
     const description = document.getElementById('task-description').value;
     const deadline = document.getElementById('task-deadline').value;
     const isMandatory = document.getElementById('task-mandatory').checked;
-
-    const assignedToId = currentUserProfile.role === 'supervisor'
-        ? currentUserProfile.supervisingId
-        : currentUser.uid;
-
+    const assignedToId = currentUserProfile.role === 'supervisor' ? currentUserProfile.supervisingId : currentUser.uid;
     if (currentUserProfile.role === 'supervisor' && !assignedToId) {
          alert("Error: No se ha encontrado un usuario supervisado asignado a tu perfil.");
          return;
     }
-
     const taskData = {
-        title,
-        description,
-        deadline: new Date(deadline),
-        isMandatory,
-        assignerId: currentUser.uid,
-        assignedToId: assignedToId,
-        status: 'pending'
+        title, description, deadline: new Date(deadline), isMandatory,
+        assignerId: currentUser.uid, assignedToId: assignedToId, status: 'pending'
     };
-
     try {
         await createTask(taskData);
         alert("Tarea creada exitosamente");
@@ -507,7 +514,6 @@ const handleLogin = async (e) => {
     e.preventDefault();
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
-
     try {
         await login(email, password);
     } catch (error) {
@@ -519,60 +525,48 @@ const handleLogin = async (e) => {
 // --- EVENT LISTENERS ---
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Inicializar la fecha de hoy
     updateSelectedDateDisplay();
 
-    // Autenticación
+    // Formularios y botones principales
     loginForm.addEventListener('submit', handleLogin);
     logoutButton.addEventListener('click', logout);
+    addTaskForm.addEventListener('submit', handleTaskCreation);
+    penaltyForm.addEventListener('submit', handlePenaltySuggestion);
+    negotiationForm.addEventListener('submit', handleNegotiation);
+    rewardForm.addEventListener('submit', handleRewardAssignment);
 
-    // FILTRO DE FECHA
+    // Filtros de fecha
     dateFilter.addEventListener('change', (e) => {
         selectedDate = new Date(e.target.value + 'T00:00:00');
         updateSelectedDateDisplay();
         loadTasksForSelectedDate();
     });
-
-    // BOTÓN PARA IR A HOY
     todayButton.addEventListener('click', () => {
         selectedDate = new Date();
         updateSelectedDateDisplay();
         loadTasksForSelectedDate();
     });
-
-    // Tareas
+    
+    // Botones de modales y cámara
     addTaskButton.addEventListener('click', () => addTaskModal.classList.remove('hidden'));
-    addTaskForm.addEventListener('submit', handleTaskCreation);
-
-    // Cámara y evidencia
     captureButton.addEventListener('click', capturePhoto);
     uploadButton.addEventListener('click', uploadEvidence);
-
-    // Reportes Diarios
     generateReportButton.addEventListener('click', generateReport);
     closeReportButton.addEventListener('click', () => reportModal.classList.add('hidden'));
     assignRewardButton.addEventListener('click', () => rewardModal.classList.remove('hidden'));
-    rewardForm.addEventListener('submit', handleRewardAssignment);
-
-    // Reportes Semanales
     generateWeeklyReportButton.addEventListener('click', generateWeeklyReport);
     closeWeeklyReportButton.addEventListener('click', () => weeklyReportModal.classList.add('hidden'));
-
-    // Formulario de Penalidad
-    penaltyForm.addEventListener('submit', handlePenaltySuggestion);
 
     // Cerrar modales al hacer clic fuera
     document.addEventListener('click', (e) => {
         if (e.target.classList.contains('modal')) {
             e.target.classList.add('hidden');
-            if (e.target === cameraModal) {
-                closeCamera();
-            }
+            if (e.target === cameraModal) closeCamera();
         }
     });
 
-    // Delegación de eventos para botones de tareas
-    document.addEventListener('click', async (e) => {
+    // --- MANEJADOR DE ACCIONES EN LAS TAREAS (DELEGACIÓN DE EVENTOS) ---
+    appView.addEventListener('click', async (e) => {
         const taskCard = e.target.closest('.task-card');
         if (!taskCard) return;
 
@@ -585,10 +579,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (e.target.classList.contains('reject-btn')) {
             await updateDocument('tasks', taskId, { status: 'pending' });
         } else if (e.target.classList.contains('evidence-btn')) {
-            currentTaskId = taskId;
+            currentTaskId = taskId; // Usamos la variable global original para la cámara
             openCamera();
         } else if (e.target.classList.contains('accept-btn')) {
-            // Aceptar penalidad: actualizar estado a 'pending' y eliminar el flag de penalidad
             await updateDocument('tasks', taskId, {
                 status: 'pending',
                 isPenalty: false,
@@ -596,12 +589,45 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             alert("Penalidad aceptada. Se ha agregado a tu lista de tareas.");
         } else if (e.target.classList.contains('decline-btn')) {
-            // === INICIO DE LA CORRECCIÓN ===
-            // Rechazar penalidad: actualizar su estado a 'rejected' en lugar de borrarla
             await updateDocument('tasks', taskId, { status: 'rejected' });
-            alert("Penalidad rechazada. El supervisor será notificado.");
-            // === FIN DE LA CORRECCIÓN ===
+            alert("Penalidad rechazada. Ahora puedes proponer una alternativa.");
+        } else if (e.target.classList.contains('propose-alternative-btn')) {
+            negotiationContext = { taskId, isSupervisorCounter: false };
+            negotiationModalTitle.textContent = "Proponer Alternativa";
+            negotiationModal.classList.remove('hidden');
+        } else if (e.target.classList.contains('accept-proposal-btn')) {
+            const taskDoc = await getTaskById(taskId);
+            const taskData = taskDoc.data();
+            if (taskData.counterProposal) {
+                await updateDocument('tasks', taskId, {
+                    title: taskData.counterProposal.title,
+                    description: taskData.counterProposal.description,
+                    status: 'pending',
+                    counterProposal: null
+                });
+                alert("Contrapropuesta aceptada.");
+            }
+        } else if (e.target.classList.contains('reject-proposal-btn')) {
+            negotiationContext.taskId = taskId;
+            supervisorRejectionModal.classList.remove('hidden');
         }
+    });
+
+    // --- MANEJADORES PARA EL MODAL DE RECHAZO DEL SUPERVISOR ---
+    restoreOriginalPenaltyBtn.addEventListener('click', async () => {
+        if (!negotiationContext.taskId) return;
+        await updateDocument('tasks', negotiationContext.taskId, { status: 'pending_acceptance', counterProposal: null });
+        alert("Contrapropuesta rechazada. La penalidad ha sido restaurada a su estado original.");
+        supervisorRejectionModal.classList.add('hidden');
+        negotiationContext.taskId = null;
+    });
+
+    proposeNewPenaltyBtn.addEventListener('click', () => {
+        if (!negotiationContext.taskId) return;
+        negotiationContext.isSupervisorCounter = true;
+        negotiationModalTitle.textContent = "Proponer Nueva Penalidad";
+        supervisorRejectionModal.classList.add('hidden');
+        negotiationModal.classList.remove('hidden');
     });
 });
 
@@ -611,38 +637,27 @@ onAuthState(async (user) => {
         currentUser = user;
         currentUserProfile = await getUserProfile(user.uid);
 
-        // Línea de diagnóstico (puedes quitarla si todo funciona bien)
         console.log("Perfil de usuario cargado:", currentUserProfile);
 
         if (currentUserProfile) {
-            // Mostrar información del usuario
             userEmail.textContent = user.email;
             userInfo.classList.remove('hidden');
-
-            // Cambiar a la vista de la app
             authView.classList.add('hidden');
             appView.classList.remove('hidden');
-
-            // Cargar tareas para la fecha seleccionada
             loadTasksForSelectedDate();
-
             console.log('Usuario autenticado:', user.email, 'Rol:', currentUserProfile.role);
         } else {
             console.error('No se pudo cargar el perfil del usuario');
             alert('Error al cargar el perfil del usuario');
+            logout();
         }
     } else {
-        // Usuario no autenticado
         currentUser = null;
         currentUserProfile = null;
-
-        // Limpiar suscripciones
         if (unsubscribe) {
             unsubscribe();
             unsubscribe = null;
         }
-
-        // Volver a la vista de login
         authView.classList.remove('hidden');
         appView.classList.add('hidden');
         userInfo.classList.add('hidden');

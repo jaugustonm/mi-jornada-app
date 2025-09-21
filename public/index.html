@@ -127,6 +127,28 @@
         </div>
     </div>
 
+    <div id="negotiation-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="negotiation-modal-title">Proponer Alternativa</h2>
+            <form id="negotiation-form">
+                <input type="text" id="negotiation-title" placeholder="Nuevo título de la penitencia" required>
+                <textarea id="negotiation-description" placeholder="Nueva descripción..." required></textarea>
+                <button type="submit">Enviar Propuesta</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="supervisor-rejection-options-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Rechazar Propuesta</h2>
+            <p>La contrapropuesta del supervisado será rechazada. ¿Qué deseas hacer a continuación?</p>
+            <div class="modal-actions">
+                <button id="restore-original-penalty-btn">Restaurar Penalidad Original</button>
+                <button id="propose-new-penalty-btn">Hacer una Contrapropuesta</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>

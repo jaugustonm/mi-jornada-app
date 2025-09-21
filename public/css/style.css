@@ -1,6 +1,6 @@
 /* ======================================================================
    ARCHIVO COMPLETO Y ACTUALIZADO: css/style.css
-   Con estilos para reporte semanal y penalidad
+   Con estilos para negociación de penalidades.
    ====================================================================== */
 
 /* --- Variables de Colores y Fuentes --- */
@@ -239,6 +239,14 @@ main {
     color: #888;
 }
 
+.counter-proposal {
+    background-color: #fff9c4;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 8px;
+    border-left: 4px solid #FFC107;
+}
+
 /* --- Botón Flotante (FAB) --- */
 .fab {
     position: fixed;
@@ -277,23 +285,33 @@ main {
 
 .modal-content {
     background-color: #fff;
-    padding: 20px;
+    padding: 20px 30px;
     border-radius: 10px;
     text-align: center;
     max-width: 90%;
     width: 500px;
 }
 
-#add-task-form {
+.modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+#add-task-form, #penalty-form, #negotiation-form {
     display: flex;
     flex-direction: column;
     gap: 15px;
     text-align: left;
 }
 
-#add-task-form input[type="text"],
+#add-task-form input,
+#penalty-form input,
+#negotiation-form input,
 #add-task-form textarea,
-#add-task-form input[type="datetime-local"] {
+#penalty-form textarea,
+#negotiation-form textarea {
     width: 95%;
     padding: 10px;
     border-radius: 5px;
@@ -301,12 +319,12 @@ main {
     font-family: var(--font-main);
 }
 
-#add-task-form textarea {
+#add-task-form textarea, #penalty-form textarea, #negotiation-form textarea {
     min-height: 80px;
     resize: vertical;
 }
 
-#add-task-form button {
+#add-task-form button, #penalty-form button, #negotiation-form button {
     padding: 12px;
     border: none;
     border-radius: 5px;
@@ -340,37 +358,14 @@ main {
     font-weight: bold;
 }
 
-.validate-btn {
-    background-color: #4CAF50; /* Verde */
-    color: white;
-}
+.validate-btn { background-color: #4CAF50; color: white; }
+.reject-btn { background-color: #f44336; color: white; }
+.status-validated { color: #4CAF50; font-weight: bold; }
+.penalty-badge { background-color: var(--primary-color); color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; font-weight: bold; margin-left: 5px; }
+.accept-btn, .accept-proposal-btn { background-color: #4CAF50; color: white; }
+.decline-btn, .reject-proposal-btn { background-color: #f44336; color: white; }
+.propose-alternative-btn { background-color: #FFC107; color: var(--text-color); }
+.status-negotiation { font-style: italic; color: #666; }
 
-.reject-btn {
-    background-color: #f44336; /* Rojo */
-    color: white;
-}
-
-.status-validated {
-    color: #4CAF50;
-    font-weight: bold;
-}
-
-.penalty-badge {
-    background-color: var(--primary-color);
-    color: white;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.8em;
-    font-weight: bold;
-    margin-left: 5px;
-}
-
-.accept-btn {
-    background-color: #4CAF50;
-    color: white;
-}
-
-.decline-btn {
-    background-color: #f44336;
-    color: white;
-}
+#restore-original-penalty-btn { background-color: var(--secondary-color); color: var(--text-color); }
+#propose-new-penalty-btn { background-color: var(--accent-color); color: white; }
