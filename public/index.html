@@ -91,6 +91,18 @@
                 <hr>
                 <button id="assign-reward-button">Asignar Recompensa</button>
             </div>
+            
+            <div id="penalty-actions" class="hidden">
+                <hr>
+                <h3>Sugerir una Penalidad</h3>
+                <form id="penalty-form">
+                    <input type="text" id="penalty-title" placeholder="Título de la penalidad" required>
+                    <textarea id="penalty-description" placeholder="Descripción de la penalidad..." required></textarea>
+                    <input type="datetime-local" id="penalty-deadline" required>
+                    <button type="submit">Sugerir Penalidad</button>
+                </form>
+            </div>
+            
             <button id="close-report-button">Cerrar</button>
         </div>
     </div>

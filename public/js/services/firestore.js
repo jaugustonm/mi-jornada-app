@@ -14,7 +14,8 @@ import {
     updateDoc,
     Timestamp,
     getDoc,
-    getDocs
+    getDocs,
+    deleteDoc // NUEVO: Importamos deleteDoc
 } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
 // --- REFERENCIAS A COLECCIONES ---
@@ -258,9 +259,19 @@ export const createTask = (taskData) => {
     const data = { 
         ...taskData, 
         createdAt: Timestamp.now(), 
-        status: 'pending' 
+        status: taskData.status || 'pending' 
     };
     return addDoc(tasksCollection, data);
+};
+
+/**
+ * Elimina una tarea por su ID.
+ * @param {string} taskId - El ID de la tarea a eliminar.
+ * @returns {Promise}
+ */
+export const deleteTask = (taskId) => {
+    const docRef = doc(db, 'tasks', taskId);
+    return deleteDoc(docRef);
 };
 
 // --- FUNCIONES PARA USUARIOS ---

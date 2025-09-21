@@ -1,6 +1,6 @@
 // ======================================================================
 // ARCHIVO COMPLETO: js/main.js
-// Con filtro de fecha y reporte semanal
+// Con filtro de fecha, reporte semanal y funcionalidad de penalidad
 // ======================================================================
 
 // --- IMPORTACIONES ---
@@ -16,7 +16,8 @@ import {
     getAssignedTasksByDate,
     saveDailyReport, 
     getAssignedTasksForDate,
-    getTasksForWeeklyReport
+    getTasksForWeeklyReport,
+    deleteTask
 } from './services/firestore.js';
 import { renderTask } from './ui/components.js';
 import { uploadImage } from './services/cloudinary.js';
@@ -49,6 +50,10 @@ const reportActions = document.getElementById('report-actions');
 const assignRewardButton = document.getElementById('assign-reward-button');
 const rewardModal = document.getElementById('reward-modal');
 const rewardForm = document.getElementById('reward-form');
+
+// ELEMENTOS PARA LA PENALIDAD
+const penaltyActions = document.getElementById('penalty-actions');
+const penaltyForm = document.getElementById('penalty-form');
 
 // ELEMENTOS PARA EL REPORTE SEMANAL
 const generateWeeklyReportButton = document.getElementById('generate-weekly-report-button');
@@ -280,19 +285,19 @@ const generateReport = async () => {
             </div>
         `;
         
-        if (unfulfilledMandatory.length > 0) {
-            reportHTML += `
-                <h3>Tareas obligatorias no cumplidas:</h3>
-                <ul class="report-unfulfilled-list">
-                    ${unfulfilledMandatory.map(task => `<li>${task.title}</li>`).join('')}
-                </ul>
-            `;
-        }
-        
-        if (canReceiveReward && currentUserProfile.role === 'supervisor') {
-            reportActions.classList.remove('hidden');
+        // Lógica de recompensa y penalidad
+        if (currentUserProfile.role === 'supervisor') {
+            if (percentage >= 80) {
+                reportActions.classList.remove('hidden');
+                penaltyActions.classList.add('hidden');
+            } else {
+                reportActions.classList.add('hidden');
+                penaltyActions.classList.remove('hidden');
+            }
         } else {
+            // El usuario supervisado solo ve su reporte, no las acciones
             reportActions.classList.add('hidden');
+            penaltyActions.classList.add('hidden');
         }
         
         reportContent.innerHTML = reportHTML;
@@ -417,6 +422,45 @@ const handleRewardAssignment = async (e) => {
 };
 
 /**
+ * Maneja la sugerencia de una nueva penalidad
+ */
+const handlePenaltySuggestion = async (e) => {
+    e.preventDefault();
+    
+    const title = document.getElementById('penalty-title').value;
+    const description = document.getElementById('penalty-description').value;
+    const deadline = document.getElementById('penalty-deadline').value;
+    
+    // Obtener el ID del supervisado (asumiendo que es el único usuario asignado)
+    const supervisadoTasks = await getTasksForReport(currentUser.uid, selectedDate);
+    if (supervisadoTasks.length === 0) {
+        alert("No se encontraron tareas para el usuario supervisado en esta fecha.");
+        return;
+    }
+    const assignedToId = supervisadoTasks[0].assignedToId;
+
+    const penaltyData = {
+        title,
+        description,
+        deadline: new Date(deadline),
+        isMandatory: true, // Una penalidad siempre es obligatoria
+        assignerId: currentUser.uid,
+        assignedToId: assignedToId,
+        status: 'pending_acceptance' // Nuevo estado
+    };
+    
+    try {
+        await createTask(penaltyData);
+        alert("Penalidad sugerida exitosamente");
+        reportModal.classList.add('hidden');
+        penaltyForm.reset();
+    } catch (error) {
+        console.error("Error sugiriendo la penalidad:", error);
+        alert("Error al sugerir la penalidad");
+    }
+};
+
+/**
  * Maneja la creación de nuevas tareas
  */
 const handleTaskCreation = async (e) => {
@@ -506,6 +550,9 @@ document.addEventListener('DOMContentLoaded', () => {
     generateWeeklyReportButton.addEventListener('click', generateWeeklyReport);
     closeWeeklyReportButton.addEventListener('click', () => weeklyReportModal.classList.add('hidden'));
     
+    // Formulario de Penalidad
+    penaltyForm.addEventListener('submit', handlePenaltySuggestion);
+    
     // Cerrar modales al hacer clic fuera
     document.addEventListener('click', (e) => {
         if (e.target.classList.contains('modal')) {
@@ -517,21 +564,33 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     // Delegación de eventos para botones de tareas
-    document.addEventListener('click', (e) => {
+    document.addEventListener('click', async (e) => {
         const taskCard = e.target.closest('.task-card');
         if (!taskCard) return;
         
         const taskId = taskCard.dataset.id;
         
         if (e.target.classList.contains('complete-btn')) {
-            updateDocument('tasks', taskId, { status: 'completed' });
+            await updateDocument('tasks', taskId, { status: 'completed' });
         } else if (e.target.classList.contains('validate-btn')) {
-            updateDocument('tasks', taskId, { status: 'validated' });
+            await updateDocument('tasks', taskId, { status: 'validated' });
         } else if (e.target.classList.contains('reject-btn')) {
-            updateDocument('tasks', taskId, { status: 'pending' });
+            await updateDocument('tasks', taskId, { status: 'pending' });
         } else if (e.target.classList.contains('evidence-btn')) {
             currentTaskId = taskId;
             openCamera();
+        } else if (e.target.classList.contains('accept-btn')) {
+            // Aceptar penalidad: actualizar estado a 'pending' y eliminar el flag de penalidad
+            await updateDocument('tasks', taskId, { 
+                status: 'pending', 
+                isPenalty: false,
+                acceptedAt: new Date()
+            });
+            alert("Penalidad aceptada. Se ha agregado a tu lista de tareas.");
+        } else if (e.target.classList.contains('decline-btn')) {
+            // Rechazar penalidad: eliminar la tarea
+            await deleteTask(taskId);
+            alert("Penalidad rechazada y eliminada.");
         }
     });
 });
