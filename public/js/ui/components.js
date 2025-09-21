@@ -131,16 +131,33 @@ export const renderTask = (task, userRole) => {
         return '';
     };
 
-    let counterProposalHTML = '';
+    let taskContentHTML;
+
+    // Si la tarea está en estado de contrapropuesta, muestra la vista de comparación.
     if (task.status === 'counter-proposed' && task.counterProposal) {
-        counterProposalHTML = `
-            <div class="counter-proposal">
-                <h4>Contrapropuesta del supervisado:</h4>
-                <p><strong>Nuevo Título:</strong> ${task.counterProposal.title}</p>
-                <p><strong>Nueva Descripción:</strong> ${task.counterProposal.description}</p>
+        taskContentHTML = `
+            <h3>Negociación de Penalidad ${isMandatory} ${specialStatusBadge}</h3>
+            <div class="negotiation-display">
+                <div class="negotiation-column">
+                    <h4>Propuesta Original</h4>
+                    <p class="negotiation-title">${task.title}</p>
+                    <p class="negotiation-description">${task.description}</p>
+                </div>
+                <div class="negotiation-column">
+                    <h4>Contrapropuesta</h4>
+                    <p class="negotiation-title">${task.counterProposal.title}</p>
+                    <p class="negotiation-description">${task.counterProposal.description}</p>
+                </div>
             </div>
         `;
+    } else {
+        // Para todos los demás estados, muestra la vista normal.
+        taskContentHTML = `
+            <h3>${task.title} ${isMandatory} ${specialStatusBadge}</h3>
+            <p>${task.description}</p>
+        `;
     }
+
 
     // Cargar y mostrar comentarios
     setTimeout(() => {
@@ -161,14 +178,12 @@ export const renderTask = (task, userRole) => {
 
     return `
         <div class="task-card ${statusClass}" data-id="${task.id}">
-            <h3>${task.title} ${isMandatory} ${specialStatusBadge}</h3>
-            <p>${task.description}</p>
-            ${counterProposalHTML}
+            ${taskContentHTML}
             <div class="task-actions">
                 ${getActionButtons()}
             </div>
             <div class="task-comments-container">
-                </div>
+            </div>
             ${task.evidence?.url ? `<a href="${task.evidence.url}" target="_blank">Ver evidencia</a>` : ''}
         </div>
     `;

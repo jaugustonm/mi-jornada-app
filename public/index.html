@@ -49,12 +49,28 @@
 
             <div class="tasks-container">
                 <h2>Tareas de la Mañana</h2>
-                <div id="morning-tasks" class="task-list"></div>
+                <div class="tasks-group">
+                    <h3 class="tasks-group-title">Pendientes y En Negociación</h3>
+                    <div id="morning-tasks-pending" class="task-list"></div>
+                </div>
+                <div class="tasks-group">
+                    <h3 class="tasks-group-title">Completadas y Validadas</h3>
+                    <div id="morning-tasks-completed" class="task-list task-list-completed"></div>
+                </div>
             </div>
+
             <div class="tasks-container">
                 <h2>Tareas de la Tarde</h2>
-                <div id="afternoon-tasks" class="task-list"></div>
+                <div class="tasks-group">
+                    <h3 class="tasks-group-title">Pendientes y En Negociación</h3>
+                    <div id="afternoon-tasks-pending" class="task-list"></div>
+                </div>
+                <div class="tasks-group">
+                    <h3 class="tasks-group-title">Completadas y Validadas</h3>
+                    <div id="afternoon-tasks-completed" class="task-list task-list-completed"></div>
+                </div>
             </div>
+
             <button id="add-task-button" class="fab">+</button>
         </section>
     </main>
@@ -174,7 +190,6 @@
             </form>
         </div>
     </div>
-
 
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>

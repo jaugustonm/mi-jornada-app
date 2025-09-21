@@ -1,7 +1,7 @@
 // ======================================================================
 // ARCHIVO COMPLETO Y CORREGIDO: js/main.js
 // VERSIÓN COMPLETA - Restaura todo el código original e implementa
-// correctamente el flujo de negociación de penalidades y comentarios.
+// correctamente la agrupación de tareas por estado.
 // ======================================================================
 
 // --- IMPORTACIONES ---
@@ -34,8 +34,6 @@ const loginForm = document.getElementById('login-form');
 const logoutButton = document.getElementById('logout-button');
 const userInfo = document.getElementById('user-info');
 const userEmail = document.getElementById('user-email');
-const morningTasksContainer = document.getElementById('morning-tasks');
-const afternoonTasksContainer = document.getElementById('afternoon-tasks');
 const addTaskButton = document.getElementById('add-task-button');
 const addTaskModal = document.getElementById('add-task-modal');
 const addTaskForm = document.getElementById('add-task-form');
@@ -178,11 +176,19 @@ const loadTasksForSelectedDate = () => {
 // --- FUNCIONES PRINCIPALES ---
 
 /**
- * Muestra las tareas en los contenedores correspondientes
+ * Muestra las tareas en los contenedores correspondientes, agrupadas por estado.
  */
 const displayTasks = (tasks) => {
-    morningTasksContainer.innerHTML = '';
-    afternoonTasksContainer.innerHTML = '';
+    // Limpiamos todos los contenedores de tareas
+    const containers = [
+        'morning-tasks-pending', 'morning-tasks-completed',
+        'afternoon-tasks-pending', 'afternoon-tasks-completed'
+    ];
+    containers.forEach(id => {
+        const container = document.getElementById(id);
+        if (container) container.innerHTML = '';
+    });
+
 
     if (!currentUserProfile) return;
 
@@ -193,7 +199,8 @@ const displayTasks = (tasks) => {
                 <p>No se han asignado tareas para la fecha seleccionada.</p>
             </div>
         `;
-        morningTasksContainer.innerHTML = noTasksMessage;
+        // Colocamos el mensaje en la sección de pendientes de la mañana por defecto
+        document.getElementById('morning-tasks-pending').innerHTML = noTasksMessage;
         return;
     }
 
@@ -202,13 +209,27 @@ const displayTasks = (tasks) => {
     tasks.forEach(task => {
         const deadlineHour = task.deadline?.toDate().getHours() || 12;
         const taskHTML = renderTask(task, currentUserProfile.role);
-        if (deadlineHour < 14) {
-            morningTasksContainer.innerHTML += taskHTML;
-        } else {
-            afternoonTasksContainer.innerHTML += taskHTML;
+
+        // Determinamos si la tarea está completada o validada
+        const isCompleted = task.status === 'completed' || task.status === 'validated';
+        
+        // Asignamos la tarea al contenedor correcto
+        if (deadlineHour < 14) { // Tareas de la mañana
+            if (isCompleted) {
+                document.getElementById('morning-tasks-completed').innerHTML += taskHTML;
+            } else {
+                document.getElementById('morning-tasks-pending').innerHTML += taskHTML;
+            }
+        } else { // Tareas de la tarde
+            if (isCompleted) {
+                document.getElementById('afternoon-tasks-completed').innerHTML += taskHTML;
+            } else {
+                document.getElementById('afternoon-tasks-pending').innerHTML += taskHTML;
+            }
         }
     });
 };
+
 
 /**
  * Abre la cámara para tomar fotos
@@ -718,7 +739,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Filtros de fecha
     dateFilter.addEventListener('change', (e) => {
-        selectedDate = new Date(e.target.value + 'T00:00:00');
+        // Aseguramos que la fecha se interprete en la zona horaria local
+        const [year, month, day] = e.target.value.split('-').map(Number);
+        selectedDate = new Date(year, month - 1, day);
         updateSelectedDateDisplay();
         loadTasksForSelectedDate();
     });
