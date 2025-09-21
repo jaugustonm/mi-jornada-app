@@ -328,7 +328,14 @@ const generateJornadaReport = async (jornada) => {
 
         reportContent.innerHTML = reportHTML;
         reportActions.classList.add('hidden');
-        penaltyActions.classList.add('hidden');
+
+        // LÓGICA MODIFICADA: Mostrar penalidad solo si el reporte es definitivo y el cumplimiento es bajo
+        if (isDefinitive && percentage < 80 && currentUserProfile.role === 'supervisor') {
+            penaltyActions.classList.remove('hidden');
+        } else {
+            penaltyActions.classList.add('hidden');
+        }
+
         reportModal.classList.remove('hidden');
 
     } catch (error) {
@@ -379,14 +386,14 @@ const generateReport = async () => {
             </div>
         `;
 
+        // LÓGICA MODIFICADA: La penalidad ya no se gestiona aquí.
         if (currentUserProfile.role === 'supervisor') {
-            if (percentage >= 80) {
+            if (canReceiveReward) {
                 reportActions.classList.remove('hidden');
-                penaltyActions.classList.add('hidden');
             } else {
                 reportActions.classList.add('hidden');
-                penaltyActions.classList.remove('hidden');
             }
+            penaltyActions.classList.add('hidden'); // Siempre oculto en el reporte diario
         } else {
             reportActions.classList.add('hidden');
             penaltyActions.classList.add('hidden');
@@ -722,7 +729,9 @@ document.addEventListener('DOMContentLoaded', () => {
     addTaskButton.addEventListener('click', () => addTaskModal.classList.remove('hidden'));
     captureButton.addEventListener('click', capturePhoto);
     uploadButton.addEventListener('click', uploadEvidence);
-    generateReportButton.addEventListener('click', generateReport);
+    if(generateReportButton) { // El botón puede no existir
+        generateReportButton.addEventListener('click', generateReport);
+    }
     generateMorningReportButton.addEventListener('click', () => generateJornadaReport('morning'));
     generateAfternoonReportButton.addEventListener('click', () => generateJornadaReport('afternoon'));
     closeReportButton.addEventListener('click', () => reportModal.classList.add('hidden'));
