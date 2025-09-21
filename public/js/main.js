@@ -719,11 +719,21 @@ const handleFinalPenalty = async (e) => {
         negotiationContext = { taskId: null, isSupervisorCounter: false };
     }
 };
+
 /**
  * Maneja la creación de nuevas tareas
  */
 const handleTaskCreation = async (e) => {
     e.preventDefault();
+
+    // --- MODIFICADO: Confirmación para el supervisado ---
+    if (currentUserProfile.role === 'supervisado') {
+        const isConfirmed = confirm("¿Estás seguro de que quieres crear esta tarea? Una vez creada, el proceso es irreversible y quedará registrada.");
+        if (!isConfirmed) {
+            return; // Detiene la ejecución si el usuario cancela
+        }
+    }
+
     const title = document.getElementById('task-title').value;
     const description = document.getElementById('task-description').value;
     const deadline = document.getElementById('task-deadline').value;
@@ -852,20 +862,28 @@ document.addEventListener('DOMContentLoaded', () => {
             currentTaskId = taskId;
             commentModal.classList.remove('hidden');
         } else if (e.target.classList.contains('accept-btn')) {
-            await updateDocument('tasks', taskId, {
-                status: 'pending',
-                acceptedAt: new Date()
-            });
-            alert("Penalidad aceptada. Se ha agregado a tu lista de tareas.");
+            // --- MODIFICADO: Confirmación para el supervisado ---
+            const isConfirmed = confirm("¿Estás seguro de que quieres aceptar esta penalidad? Una vez aceptada, el proceso es irreversible.");
+            if (isConfirmed) {
+                await updateDocument('tasks', taskId, {
+                    status: 'pending',
+                    acceptedAt: new Date()
+                });
+                alert("Penalidad aceptada. Se ha agregado a tu lista de tareas.");
+            }
         } else if (e.target.classList.contains('decline-btn')) {
             await updateDocument('tasks', taskId, { status: 'rejected' });
             alert("Penalidad rechazada. Ahora puedes proponer una alternativa.");
         } else if (e.target.classList.contains('accept-task-btn')) {
-            await updateDocument('tasks', taskId, {
-                status: 'pending',
-                acceptedAt: new Date()
-            });
-            alert("Tarea aceptada.");
+            // --- MODIFICADO: Confirmación para el supervisado ---
+            const isConfirmed = confirm("¿Estás seguro de que quieres aceptar esta tarea? Una vez aceptada, el proceso es irreversible.");
+            if (isConfirmed) {
+                await updateDocument('tasks', taskId, {
+                    status: 'pending',
+                    acceptedAt: new Date()
+                });
+                alert("Tarea aceptada.");
+            }
         } else if (e.target.classList.contains('decline-task-btn')) {
             await updateDocument('tasks', taskId, { status: 'rejected' });
             alert("Tarea rechazada.");
