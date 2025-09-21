@@ -258,6 +258,32 @@ export const getTasksForReport = async (userId, date) => {
 };
 
 /**
+ * Obtiene tareas dentro de un rango de tiempo específico para los reportes de jornada.
+ * @param {string} userId - El ID del usuario (supervisado o supervisor).
+ * @param {Date} startTime - La fecha y hora de inicio.
+ * @param {Date} endTime - La fecha y hora de fin.
+ * @param {boolean} isSupervisor - Verdadero si el usuario es un supervisor.
+ * @returns {Promise<Array>} - Las tareas dentro del rango de tiempo.
+ */
+export const getTasksForTimeRange = async (userId, startTime, endTime, isSupervisor) => {
+    const fieldToQuery = isSupervisor ? "assignerId" : "assignedToId";
+
+    const q = query(
+        tasksCollection,
+        where(fieldToQuery, "==", userId),
+        where("deadline", ">=", startTime),
+        where("deadline", "<=", endTime)
+    );
+
+    const querySnapshot = await getDocs(q);
+    const tasks = [];
+    querySnapshot.forEach((doc) => {
+        tasks.push({ id: doc.id, ...doc.data() });
+    });
+    return tasks;
+};
+
+/**
  * FUNCIÓN ACTUALIZADA: Obtiene las tareas de un usuario para una fecha específica (tiempo real).
  * @param {string} userId - El ID del usuario.
  * @param {Date} selectedDate - La fecha seleccionada.

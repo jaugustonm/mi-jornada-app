@@ -20,7 +20,8 @@ import {
     getTasksForWeeklyReport,
     deleteTask,
     getTaskById,
-    addCommentToTask // NUEVO: Importamos la función de comentarios
+    addCommentToTask, // NUEVO: Importamos la función de comentarios
+    getTasksForTimeRange
 } from './services/firestore.js';
 import { renderTask } from './ui/components.js';
 import { uploadImage } from './services/cloudinary.js';
@@ -50,11 +51,17 @@ const commentForm = document.getElementById('comment-form'); // NUEVO
 const generateReportButton = document.getElementById('generate-report-button');
 const reportModal = document.getElementById('report-modal');
 const reportContent = document.getElementById('report-content');
+const reportModalTitle = document.getElementById('report-modal-title');
 const closeReportButton = document.getElementById('close-report-button');
 const reportActions = document.getElementById('report-actions');
 const assignRewardButton = document.getElementById('assign-reward-button');
 const rewardModal = document.getElementById('reward-modal');
 const rewardForm = document.getElementById('reward-form');
+
+// ELEMENTOS PARA REPORTES DE JORNADA
+const generateMorningReportButton = document.getElementById('generate-morning-report-button');
+const generateAfternoonReportButton = document.getElementById('generate-afternoon-report-button');
+
 
 // ELEMENTOS PARA LA PENALIDAD
 const penaltyActions = document.getElementById('penalty-actions');
@@ -270,6 +277,68 @@ const uploadEvidence = async () => {
 };
 
 /**
+ * Genera el reporte para una jornada específica (mañana o tarde)
+ */
+const generateJornadaReport = async (jornada) => {
+    if (!currentUser || !currentUserProfile) return;
+
+    const now = await getSecureTime();
+    const startOfDay = new Date(selectedDate);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    let startTime, endTime, reportTitle, isDefinitive;
+
+    if (jornada === 'morning') {
+        startTime = startOfDay;
+        endTime = new Date(selectedDate);
+        endTime.setHours(12, 0, 0, 0);
+        reportTitle = "Reporte de Jornada - Mañana";
+        isDefinitive = now.getHours() >= 12;
+    } else { // afternoon
+        startTime = new Date(selectedDate);
+        startTime.setHours(12, 0, 0, 1);
+        endTime = new Date(selectedDate);
+        endTime.setHours(17, 0, 0, 0);
+        reportTitle = "Reporte de Jornada - Tarde";
+        isDefinitive = now.getHours() >= 17;
+    }
+
+    try {
+        const tasks = await getTasksForTimeRange(currentUser.uid, startTime, endTime, currentUserProfile.role === 'supervisor');
+        const totalTasks = tasks.length;
+        const completedTasks = tasks.filter(t => t.status === 'completed' || t.status === 'validated').length;
+        const percentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+        reportModalTitle.textContent = reportTitle;
+
+        let reportHTML = `
+            <div class="report-stat">
+                Fecha del reporte: <span>${formatDateForDisplay(selectedDate)}</span>
+            </div>
+            <div class="report-stat">
+                Estado: <span>${isDefinitive ? 'Definitivo' : 'Parcial'}</span>
+            </div>
+            <div class="report-stat">
+                Tareas completadas: <span>${completedTasks} / ${totalTasks}</span>
+            </div>
+            <div class="report-stat">
+                Porcentaje de cumplimiento: <span>${percentage}%</span>
+            </div>
+        `;
+
+        reportContent.innerHTML = reportHTML;
+        reportActions.classList.add('hidden');
+        penaltyActions.classList.add('hidden');
+        reportModal.classList.remove('hidden');
+
+    } catch (error) {
+        console.error(`Error generando el reporte de ${jornada}:`, error);
+        alert(`Error al generar el reporte de ${jornada}.`);
+    }
+};
+
+
+/**
  * Genera el reporte del día seleccionado
  */
 const generateReport = async () => {
@@ -292,6 +361,8 @@ const generateReport = async () => {
 
         const percentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
         const canReceiveReward = unfulfilledMandatory.length === 0 && percentage >= 80;
+        
+        reportModalTitle.textContent = "Reporte de Cumplimiento Diario";
 
         let reportHTML = `
             <div class="report-stat">
@@ -652,6 +723,8 @@ document.addEventListener('DOMContentLoaded', () => {
     captureButton.addEventListener('click', capturePhoto);
     uploadButton.addEventListener('click', uploadEvidence);
     generateReportButton.addEventListener('click', generateReport);
+    generateMorningReportButton.addEventListener('click', () => generateJornadaReport('morning'));
+    generateAfternoonReportButton.addEventListener('click', () => generateJornadaReport('afternoon'));
     closeReportButton.addEventListener('click', () => reportModal.classList.add('hidden'));
     assignRewardButton.addEventListener('click', () => rewardModal.classList.remove('hidden'));
     generateWeeklyReportButton.addEventListener('click', generateWeeklyReport);
