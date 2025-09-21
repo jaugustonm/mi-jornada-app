@@ -1,20 +1,20 @@
 // ======================================================================
-// ARCHIVO COMPLETO: js/main.js
-// Con filtro de fecha, reporte semanal y funcionalidad de penalidad
+// ARCHIVO COMPLETO Y CORREGIDO: js/main.js
+// Soluciona el error de permisos al rechazar una penalidad.
 // ======================================================================
 
 // --- IMPORTACIONES ---
 import { onAuthState, login, logout } from './services/auth.js';
-import { 
-    getTasks, 
+import {
+    getTasks,
     getTasksByDate,
-    updateDocument, 
-    createTask, 
-    getUserProfile, 
-    getTasksForReport, 
-    getAssignedTasks, 
+    updateDocument,
+    createTask,
+    getUserProfile,
+    getTasksForReport,
+    getAssignedTasks,
     getAssignedTasksByDate,
-    saveDailyReport, 
+    saveDailyReport,
     getAssignedTasksForDate,
     getTasksForWeeklyReport,
     deleteTask
@@ -82,11 +82,11 @@ let selectedDate = new Date(); // FECHA SELECCIONADA
  * Formatea una fecha para mostrarla de manera legible
  */
 const formatDateForDisplay = (date) => {
-    const options = { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
+    const options = {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
     };
     return date.toLocaleDateString('es-ES', options);
 };
@@ -113,17 +113,17 @@ const updateSelectedDateDisplay = () => {
  */
 const getWeekLimits = (date) => {
     const day = date.getDay(); // 0 for Sunday, 1 for Monday, ..., 6 for Saturday
-    
+
     // Calcula el inicio de la semana (Domingo)
     const startOfWeek = new Date(date);
     startOfWeek.setDate(date.getDate() - day); // Ir al domingo
     startOfWeek.setHours(0, 0, 0, 0);
-    
+
     // Calcula el fin de la semana (Viernes)
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 5); // 0 (Dom) + 5 = 5 (Vie)
     endOfWeek.setHours(23, 59, 59, 999);
-    
+
     return { startOfWeek, endOfWeek };
 };
 
@@ -133,11 +133,11 @@ const getWeekLimits = (date) => {
 const loadTasksForSelectedDate = () => {
     // Limpiar suscripción anterior si existe
     if (unsubscribe) unsubscribe();
-    
+
     if (!currentUser || !currentUserProfile) return;
-    
+
     console.log('Cargando tareas para fecha:', selectedDate);
-    
+
     // Cargar tareas según el rol del usuario y la fecha seleccionada
     if (currentUserProfile.role === 'supervisor') {
         unsubscribe = getAssignedTasksByDate(currentUser.uid, selectedDate, displayTasks);
@@ -154,7 +154,7 @@ const loadTasksForSelectedDate = () => {
 const displayTasks = (tasks) => {
     morningTasksContainer.innerHTML = '';
     afternoonTasksContainer.innerHTML = '';
-    
+
     if (!currentUserProfile) return;
 
     // Si no hay tareas para el día seleccionado
@@ -213,11 +213,11 @@ const closeCamera = () => {
 const capturePhoto = () => {
     const canvas = photoCanvas;
     const context = canvas.getContext('2d');
-    
+
     canvas.width = cameraFeed.videoWidth;
     canvas.height = cameraFeed.videoHeight;
     context.drawImage(cameraFeed, 0, 0);
-    
+
     captureButton.style.display = 'none';
     uploadButton.classList.remove('hidden');
 };
@@ -227,16 +227,16 @@ const capturePhoto = () => {
  */
 const uploadEvidence = async () => {
     const canvas = photoCanvas;
-    
+
     canvas.toBlob(async (blob) => {
         const imageUrl = await uploadImage(blob);
-        
+
         if (imageUrl && currentTaskId) {
             await updateDocument('tasks', currentTaskId, {
                 evidence: { url: imageUrl, uploadedAt: new Date() },
                 status: 'completed'
             });
-            
+
             alert("Evidencia subida exitosamente");
             closeCamera();
             currentTaskId = null;
@@ -251,25 +251,25 @@ const uploadEvidence = async () => {
  */
 const generateReport = async () => {
     if (!currentUser || !currentUserProfile) return;
-    
+
     let tasks = [];
-    
+
     try {
         if (currentUserProfile.role === 'supervisor') {
             tasks = await getAssignedTasksForDate(currentUser.uid, selectedDate);
         } else {
             tasks = await getTasksForReport(currentUser.uid, selectedDate);
         }
-        
+
         const totalTasks = tasks.length;
         const completedTasks = tasks.filter(t => t.status === 'completed' || t.status === 'validated').length;
         const mandatoryTasks = tasks.filter(t => t.isMandatory);
         const completedMandatory = mandatoryTasks.filter(t => t.status === 'completed' || t.status === 'validated').length;
         const unfulfilledMandatory = mandatoryTasks.filter(t => t.status !== 'completed' && t.status !== 'validated');
-        
+
         const percentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
         const canReceiveReward = unfulfilledMandatory.length === 0 && percentage >= 80;
-        
+
         let reportHTML = `
             <div class="report-stat">
                 Fecha del reporte: <span>${formatDateForDisplay(selectedDate)}</span>
@@ -284,7 +284,7 @@ const generateReport = async () => {
                 Tareas obligatorias completadas: <span>${completedMandatory} / ${mandatoryTasks.length}</span>
             </div>
         `;
-        
+
         // Lógica de recompensa y penalidad
         if (currentUserProfile.role === 'supervisor') {
             if (percentage >= 80) {
@@ -299,10 +299,10 @@ const generateReport = async () => {
             reportActions.classList.add('hidden');
             penaltyActions.classList.add('hidden');
         }
-        
+
         reportContent.innerHTML = reportHTML;
         reportModal.classList.remove('hidden');
-        
+
         // Guardar el reporte en la base de datos
         const reportData = {
             userId: currentUserProfile.role === 'supervisor' ? currentUser.uid : currentUser.uid,
@@ -315,9 +315,9 @@ const generateReport = async () => {
             canReceiveReward,
             createdAt: new Date()
         };
-        
+
         currentReportId = await saveDailyReport(reportData);
-        
+
     } catch (error) {
         console.error("Error generando el reporte:", error);
         alert("Error al generar el reporte");
@@ -329,34 +329,34 @@ const generateReport = async () => {
  */
 const generateWeeklyReport = async () => {
     if (!currentUser || !currentUserProfile) return;
-    
+
     // 1. Obtener la hora actual para determinar el día de la semana
-    const today = new Date(); 
+    const today = new Date();
     const dayOfWeek = today.getDay(); // 0 = Sunday, 6 = Saturday
     const isSaturday = dayOfWeek === 6;
-    
+
     // 2. Obtener tareas de la semana de la fecha seleccionada (selectedDate)
     const isSupervisor = currentUserProfile.role === 'supervisor';
     let tasks = [];
-    
+
     try {
         tasks = await getTasksForWeeklyReport(currentUser.uid, selectedDate, isSupervisor);
-        
+
         // 3. Calcular estadísticas semanales
         const totalTasks = tasks.length;
         const completedTasks = tasks.filter(t => t.status === 'completed' || t.status === 'validated').length;
         const percentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-        
+
         let reportHTML = '';
-        
+
         // 4. Determinar el rango de la semana y el estado del reporte
         const { startOfWeek, endOfWeek } = getWeekLimits(selectedDate);
-        
+
         // Formato para mostrar solo día y mes/año (ej: Domingo, 15 de Septiembre)
         const dateOptions = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' };
         const startDateDisplay = startOfWeek.toLocaleDateString('es-ES', dateOptions);
         const endDateDisplay = endOfWeek.toLocaleDateString('es-ES', dateOptions);
-        
+
         reportHTML += `
             <div class="report-stat">
                 Semana: <span>${startDateDisplay.split(',')[0]} - ${endDateDisplay.split(',')[0]}</span>
@@ -371,7 +371,7 @@ const generateWeeklyReport = async () => {
                 Porcentaje de cumplimiento: <span>${percentage}%</span>
             </div>
         `;
-        
+
         // 5. Lógica de Penalidad (solo si es Sábado y porcentaje < 80%)
         if (isSaturday && percentage < 80) {
             const penalty = `
@@ -391,10 +391,10 @@ const generateWeeklyReport = async () => {
                 </div>
             `;
         }
-        
+
         weeklyReportContent.innerHTML = reportHTML;
         weeklyReportModal.classList.remove('hidden');
-        
+
     } catch (error) {
         console.error("Error generando el reporte semanal:", error);
         alert("Error al generar el reporte semanal");
@@ -407,13 +407,13 @@ const generateWeeklyReport = async () => {
 const handleRewardAssignment = async (e) => {
     e.preventDefault();
     const rewardText = document.getElementById('reward-text').value;
-    
+
     if (currentReportId && rewardText.trim()) {
         await updateDocument('dailyReports', currentReportId, {
             reward: rewardText,
             rewardAssignedAt: new Date()
         });
-        
+
         alert("Recompensa asignada exitosamente");
         rewardModal.classList.add('hidden');
         reportModal.classList.add('hidden');
@@ -426,29 +426,28 @@ const handleRewardAssignment = async (e) => {
  */
 const handlePenaltySuggestion = async (e) => {
     e.preventDefault();
-    
+
     const title = document.getElementById('penalty-title').value;
     const description = document.getElementById('penalty-description').value;
     const deadline = document.getElementById('penalty-deadline').value;
-    
-    // Obtener el ID del supervisado (asumiendo que es el único usuario asignado)
-    const supervisadoTasks = await getTasksForReport(currentUser.uid, selectedDate);
-    if (supervisadoTasks.length === 0) {
-        alert("No se encontraron tareas para el usuario supervisado en esta fecha.");
+
+    const assignedToId = currentUserProfile.supervisingId;
+
+    if (!assignedToId) {
+        alert("Error: No se ha encontrado un usuario supervisado asignado a tu perfil.");
         return;
     }
-    const assignedToId = supervisadoTasks[0].assignedToId;
 
     const penaltyData = {
         title,
         description,
         deadline: new Date(deadline),
-        isMandatory: true, // Una penalidad siempre es obligatoria
+        isMandatory: true,
         assignerId: currentUser.uid,
         assignedToId: assignedToId,
-        status: 'pending_acceptance' // Nuevo estado
+        status: 'pending_acceptance'
     };
-    
+
     try {
         await createTask(penaltyData);
         alert("Penalidad sugerida exitosamente");
@@ -465,22 +464,31 @@ const handlePenaltySuggestion = async (e) => {
  */
 const handleTaskCreation = async (e) => {
     e.preventDefault();
-    
+
     const title = document.getElementById('task-title').value;
     const description = document.getElementById('task-description').value;
     const deadline = document.getElementById('task-deadline').value;
     const isMandatory = document.getElementById('task-mandatory').checked;
-    
+
+    const assignedToId = currentUserProfile.role === 'supervisor'
+        ? currentUserProfile.supervisingId
+        : currentUser.uid;
+
+    if (currentUserProfile.role === 'supervisor' && !assignedToId) {
+         alert("Error: No se ha encontrado un usuario supervisado asignado a tu perfil.");
+         return;
+    }
+
     const taskData = {
         title,
         description,
         deadline: new Date(deadline),
         isMandatory,
         assignerId: currentUser.uid,
-        assignedToId: currentUser.uid,
+        assignedToId: assignedToId,
         status: 'pending'
     };
-    
+
     try {
         await createTask(taskData);
         alert("Tarea creada exitosamente");
@@ -499,7 +507,7 @@ const handleLogin = async (e) => {
     e.preventDefault();
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
-    
+
     try {
         await login(email, password);
     } catch (error) {
@@ -513,33 +521,33 @@ const handleLogin = async (e) => {
 document.addEventListener('DOMContentLoaded', () => {
     // Inicializar la fecha de hoy
     updateSelectedDateDisplay();
-    
+
     // Autenticación
     loginForm.addEventListener('submit', handleLogin);
     logoutButton.addEventListener('click', logout);
-    
+
     // FILTRO DE FECHA
     dateFilter.addEventListener('change', (e) => {
         selectedDate = new Date(e.target.value + 'T00:00:00');
         updateSelectedDateDisplay();
         loadTasksForSelectedDate();
     });
-    
+
     // BOTÓN PARA IR A HOY
     todayButton.addEventListener('click', () => {
         selectedDate = new Date();
         updateSelectedDateDisplay();
         loadTasksForSelectedDate();
     });
-    
+
     // Tareas
     addTaskButton.addEventListener('click', () => addTaskModal.classList.remove('hidden'));
     addTaskForm.addEventListener('submit', handleTaskCreation);
-    
+
     // Cámara y evidencia
     captureButton.addEventListener('click', capturePhoto);
     uploadButton.addEventListener('click', uploadEvidence);
-    
+
     // Reportes Diarios
     generateReportButton.addEventListener('click', generateReport);
     closeReportButton.addEventListener('click', () => reportModal.classList.add('hidden'));
@@ -549,10 +557,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Reportes Semanales
     generateWeeklyReportButton.addEventListener('click', generateWeeklyReport);
     closeWeeklyReportButton.addEventListener('click', () => weeklyReportModal.classList.add('hidden'));
-    
+
     // Formulario de Penalidad
     penaltyForm.addEventListener('submit', handlePenaltySuggestion);
-    
+
     // Cerrar modales al hacer clic fuera
     document.addEventListener('click', (e) => {
         if (e.target.classList.contains('modal')) {
@@ -562,14 +570,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
-    
+
     // Delegación de eventos para botones de tareas
     document.addEventListener('click', async (e) => {
         const taskCard = e.target.closest('.task-card');
         if (!taskCard) return;
-        
+
         const taskId = taskCard.dataset.id;
-        
+
         if (e.target.classList.contains('complete-btn')) {
             await updateDocument('tasks', taskId, { status: 'completed' });
         } else if (e.target.classList.contains('validate-btn')) {
@@ -581,16 +589,18 @@ document.addEventListener('DOMContentLoaded', () => {
             openCamera();
         } else if (e.target.classList.contains('accept-btn')) {
             // Aceptar penalidad: actualizar estado a 'pending' y eliminar el flag de penalidad
-            await updateDocument('tasks', taskId, { 
-                status: 'pending', 
+            await updateDocument('tasks', taskId, {
+                status: 'pending',
                 isPenalty: false,
                 acceptedAt: new Date()
             });
             alert("Penalidad aceptada. Se ha agregado a tu lista de tareas.");
         } else if (e.target.classList.contains('decline-btn')) {
-            // Rechazar penalidad: eliminar la tarea
-            await deleteTask(taskId);
-            alert("Penalidad rechazada y eliminada.");
+            // === INICIO DE LA CORRECCIÓN ===
+            // Rechazar penalidad: actualizar su estado a 'rejected' en lugar de borrarla
+            await updateDocument('tasks', taskId, { status: 'rejected' });
+            alert("Penalidad rechazada. El supervisor será notificado.");
+            // === FIN DE LA CORRECCIÓN ===
         }
     });
 });
@@ -600,19 +610,22 @@ onAuthState(async (user) => {
     if (user) {
         currentUser = user;
         currentUserProfile = await getUserProfile(user.uid);
-        
+
+        // Línea de diagnóstico (puedes quitarla si todo funciona bien)
+        console.log("Perfil de usuario cargado:", currentUserProfile);
+
         if (currentUserProfile) {
             // Mostrar información del usuario
             userEmail.textContent = user.email;
             userInfo.classList.remove('hidden');
-            
+
             // Cambiar a la vista de la app
             authView.classList.add('hidden');
             appView.classList.remove('hidden');
-            
+
             // Cargar tareas para la fecha seleccionada
             loadTasksForSelectedDate();
-            
+
             console.log('Usuario autenticado:', user.email, 'Rol:', currentUserProfile.role);
         } else {
             console.error('No se pudo cargar el perfil del usuario');
@@ -622,13 +635,13 @@ onAuthState(async (user) => {
         // Usuario no autenticado
         currentUser = null;
         currentUserProfile = null;
-        
+
         // Limpiar suscripciones
         if (unsubscribe) {
             unsubscribe();
             unsubscribe = null;
         }
-        
+
         // Volver a la vista de login
         authView.classList.remove('hidden');
         appView.classList.add('hidden');
