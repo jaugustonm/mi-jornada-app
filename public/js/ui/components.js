@@ -10,16 +10,22 @@ import { getCommentsForTask } from '../services/firestore.js';
 export const renderTask = (task, userRole) => {
     const statusClass = task.status === 'completed' || task.status === 'validated' ? 'task-completed' : '';
     const isMandatory = task.isMandatory ? '<span class="mandatory-badge">Obligatorio</span>' : '';
-    let isPenalty = task.status === 'pending_acceptance' ? '<span class="penalty-badge">Penalidad Sugerida</span>' : '';
+    let specialStatusBadge = '';
 
-    if (task.status === 'counter-proposed') {
-        isPenalty = '<span class="penalty-badge" style="background-color: #FFC107;">Contrapropuesta</span>';
-    } else if (task.status === 'rejected') {
-        isPenalty = '<span class="penalty-badge" style="background-color: #F44336;">Rechazada</span>';
-    } else if (task.status === 'final_penalty') {
-        isPenalty = '<span class="penalty-badge" style="background-color: #000000;">Penalidad Final</span>';
-    } else if (task.status === 'negotiation_locked') {
-        isPenalty = '<span class="penalty-badge" style="background-color: #607D8B;">Decisión Final</span>';
+    if (task.taskType === 'penalty') {
+        if (task.status === 'pending_acceptance') {
+            specialStatusBadge = '<span class="penalty-badge">Penalidad Sugerida</span>';
+        } else if (task.status === 'counter-proposed') {
+            specialStatusBadge = '<span class="penalty-badge" style="background-color: #FFC107;">Contrapropuesta</span>';
+        } else if (task.status === 'rejected') {
+            specialStatusBadge = '<span class="penalty-badge" style="background-color: #F44336;">Rechazada</span>';
+        } else if (task.status === 'final_penalty') {
+            specialStatusBadge = '<span class="penalty-badge" style="background-color: #000000;">Penalidad Final</span>';
+        } else if (task.status === 'negotiation_locked') {
+            specialStatusBadge = '<span class="penalty-badge" style="background-color: #607D8B;">Decisión Final</span>';
+        }
+    } else if (task.status === 'pending_acceptance') {
+        specialStatusBadge = '<span class="penalty-badge" style="background-color: #2196F3;">Pendiente de Aceptación</span>';
     }
 
 
@@ -28,19 +34,30 @@ export const renderTask = (task, userRole) => {
     const getActionButtons = () => {
         // Vistas para el Supervisado
         if (userRole === 'supervisado') {
-            let supervisedButtons = `<button class="add-comment-btn">💬 Añadir Comentario</button>`; // BOTÓN AÑADIDO
+            let supervisedButtons = `<button class="add-comment-btn">💬 Añadir Comentario</button>`;
             switch (task.status) {
                 case 'pending_acceptance':
-                    supervisedButtons += `
-                        <button class="accept-btn">✅ Aceptar</button>
-                        <button class="decline-btn">❌ Rechazar</button>
-                    `;
+                    if (task.taskType === 'penalty') {
+                        supervisedButtons += `
+                            <button class="accept-btn">✅ Aceptar Penalidad</button>
+                            <button class="decline-btn">❌ Rechazar Penalidad</button>
+                        `;
+                    } else {
+                        supervisedButtons += `
+                            <button class="accept-task-btn">✅ Aceptar Tarea</button>
+                            <button class="decline-task-btn">❌ Rechazar Tarea</button>
+                        `;
+                    }
                     break;
                 case 'rejected':
-                    if (proposalCounts.supervised < 2) {
-                        supervisedButtons += `<button class="propose-alternative-btn">↪️ Proponer Alternativa</button>`;
+                    if (task.taskType === 'penalty') {
+                        if (proposalCounts.supervised < 2) {
+                            supervisedButtons += `<button class="propose-alternative-btn">↪️ Proponer Alternativa</button>`;
+                        } else {
+                            supervisedButtons += `<p class="status-negotiation">Límite de propuestas alcanzado.</p>`;
+                        }
                     } else {
-                        supervisedButtons += `<p class="status-negotiation">Límite de propuestas alcanzado.</p>`;
+                        supervisedButtons += `<p class="status-negotiation">Has rechazado esta tarea.</p>`;
                     }
                     break;
                 case 'pending':
@@ -78,19 +95,22 @@ export const renderTask = (task, userRole) => {
                             <button class="reject-proposal-btn">✖️ Rechazar Propuesta</button>
                         `;
                     } else {
-                        // Si el supervisor ya no tiene propuestas, debe definir la penalidad final
                         supervisorButtons += `<button class="set-final-penalty-btn">Definir Penalidad Final</button>`;
                     }
                     break;
                  case 'pending_acceptance':
-                     supervisorButtons += `<p class="status-negotiation">Esperando respuesta del supervisado...</p>`;
+                     supervisorButtons += `<p class="status-negotiation">Esperando aceptación del supervisado...</p>`;
                      break;
                  case 'rejected':
-                    // **CORRECCIÓN CLAVE AQUÍ:** Dar al supervisor una acción cuando la penalidad es rechazada.
-                    if (proposalCounts.supervisor < 2) {
-                        supervisorButtons += `<button class="reject-proposal-btn">↪️ Hacer Contrapropuesta</button>`;
+                    if (task.taskType === 'penalty') {
+                        if (proposalCounts.supervisor < 2) {
+                            supervisorButtons += `<button class="reject-proposal-btn">↪️ Hacer Contrapropuesta</button>`;
+                        } else {
+                            supervisorButtons += `<button class="set-final-penalty-btn">Definir Penalidad Final</button>`;
+                        }
                     } else {
-                        supervisorButtons += `<button class="set-final-penalty-btn">Definir Penalidad Final</button>`;
+                        supervisorButtons += `<p class="status-negotiation">Tarea rechazada por el supervisado.</p> 
+                                              <button class="reject-btn delete-task-btn">🗑️ Eliminar Tarea</button>`;
                     }
                     break;
                  case 'negotiation_locked':
@@ -141,7 +161,7 @@ export const renderTask = (task, userRole) => {
 
     return `
         <div class="task-card ${statusClass}" data-id="${task.id}">
-            <h3>${task.title} ${isMandatory} ${isPenalty}</h3>
+            <h3>${task.title} ${isMandatory} ${specialStatusBadge}</h3>
             <p>${task.description}</p>
             ${counterProposalHTML}
             <div class="task-actions">

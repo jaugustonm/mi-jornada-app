@@ -520,6 +520,7 @@ const handlePenaltySuggestion = async (e) => {
     const penaltyData = {
         title, description, deadline: new Date(deadline), isMandatory: true,
         assignerId: currentUser.uid, assignedToId: assignedToId, status: 'pending_acceptance',
+        taskType: 'penalty',
         negotiationHistory: [{
             proposer: 'supervisor',
             title,
@@ -656,7 +657,9 @@ const handleTaskCreation = async (e) => {
     }
     const taskData = {
         title, description, deadline: new Date(deadline), isMandatory,
-        assignerId: currentUser.uid, assignedToId: assignedToId, status: 'pending'
+        assignerId: currentUser.uid, assignedToId: assignedToId, 
+        status: currentUserProfile.role === 'supervisor' ? 'pending_acceptance' : 'pending',
+        taskType: 'regular'
     };
     try {
         await createTask(taskData);
@@ -772,13 +775,26 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (e.target.classList.contains('accept-btn')) {
             await updateDocument('tasks', taskId, {
                 status: 'pending',
-                isPenalty: false,
                 acceptedAt: new Date()
             });
             alert("Penalidad aceptada. Se ha agregado a tu lista de tareas.");
         } else if (e.target.classList.contains('decline-btn')) {
             await updateDocument('tasks', taskId, { status: 'rejected' });
             alert("Penalidad rechazada. Ahora puedes proponer una alternativa.");
+        } else if (e.target.classList.contains('accept-task-btn')) {
+            await updateDocument('tasks', taskId, {
+                status: 'pending',
+                acceptedAt: new Date()
+            });
+            alert("Tarea aceptada.");
+        } else if (e.target.classList.contains('decline-task-btn')) {
+            await updateDocument('tasks', taskId, { status: 'rejected' });
+            alert("Tarea rechazada.");
+        } else if (e.target.classList.contains('delete-task-btn')) {
+            if (confirm("¿Estás seguro de que quieres eliminar esta tarea?")) {
+                await deleteTask(taskId);
+                alert("Tarea eliminada.");
+            }
         } else if (e.target.classList.contains('propose-alternative-btn')) {
             if (proposalCounts.supervised >= 2) {
                 await updateDocument('tasks', taskId, { status: 'negotiation_locked' });
