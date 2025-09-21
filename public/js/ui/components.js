@@ -28,30 +28,38 @@ export const renderTask = (task, userRole) => {
     const getActionButtons = () => {
         // Vistas para el Supervisado
         if (userRole === 'supervisado') {
+            let supervisedButtons = `<button class="add-comment-btn">💬 Añadir Comentario</button>`; // BOTÓN AÑADIDO
             switch (task.status) {
                 case 'pending_acceptance':
-                    return `
+                    supervisedButtons += `
                         <button class="accept-btn">✅ Aceptar</button>
                         <button class="decline-btn">❌ Rechazar</button>
                     `;
+                    break;
                 case 'rejected':
                     if (proposalCounts.supervised < 2) {
-                        return `<button class="propose-alternative-btn">↪️ Proponer Alternativa</button>`;
+                        supervisedButtons += `<button class="propose-alternative-btn">↪️ Proponer Alternativa</button>`;
                     } else {
-                        return `<p class="status-negotiation">Límite de propuestas alcanzado.</p>`;
+                        supervisedButtons += `<p class="status-negotiation">Límite de propuestas alcanzado.</p>`;
                     }
+                    break;
                 case 'pending':
                 case 'accepted':
                 case 'final_penalty':
-                    return `
+                    supervisedButtons += `
                         <button class="evidence-btn">📸 Subir Evidencia para Completar</button>
                     `;
+                    break;
                 case 'counter-proposed':
-                    return `<p class="status-negotiation">Esperando respuesta del supervisor...</p>`;
+                    supervisedButtons += `<p class="status-negotiation">Esperando respuesta del supervisor...</p>`;
+                    break;
                 case 'negotiation_locked':
-                    return `<p class="status-negotiation">Negociación bloqueada. Esperando la decisión final del supervisor.</p>`;
+                    supervisedButtons += `<p class="status-negotiation">Negociación bloqueada. Esperando la decisión final del supervisor.</p>`;
+                    break;
             }
+            return supervisedButtons;
         }
+
 
         // Vistas para el Supervisor
         if (userRole === 'supervisor') {
