@@ -44,8 +44,7 @@ export const renderTask = (task, userRole) => {
                 case 'accepted':
                 case 'final_penalty':
                     return `
-                        <button class="complete-btn">✅ Completar</button>
-                        <button class="evidence-btn">📸 Subir Evidencia</button>
+                        <button class="evidence-btn">📸 Subir Evidencia para Completar</button>
                     `;
                 case 'counter-proposed':
                     return `<p class="status-negotiation">Esperando respuesta del supervisor...</p>`;

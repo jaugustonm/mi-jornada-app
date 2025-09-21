@@ -759,9 +759,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const proposalCounts = taskData.proposalCounts || { supervisor: 0, supervised: 0 };
 
 
-        if (e.target.classList.contains('complete-btn')) {
-            await updateDocument('tasks', taskId, { status: 'completed' });
-        } else if (e.target.classList.contains('validate-btn')) {
+        if (e.target.classList.contains('validate-btn')) {
             await updateDocument('tasks', taskId, { status: 'validated' });
         } else if (e.target.classList.contains('reject-btn')) {
             await updateDocument('tasks', taskId, { status: 'pending' });
