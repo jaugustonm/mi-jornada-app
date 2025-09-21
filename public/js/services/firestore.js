@@ -4,11 +4,11 @@
 // ======================================================================
 
 import { db } from '../config/firebase-config.js';
-import { 
-    collection, 
-    addDoc, 
-    query, 
-    where, 
+import {
+    collection,
+    addDoc,
+    query,
+    where,
     onSnapshot,
     doc,
     updateDoc,
@@ -45,17 +45,17 @@ const getDayLimits = (date) => {
  */
 const getWeekLimits = (date) => {
     const day = date.getDay(); // 0 for Sunday, 1 for Monday, ..., 6 for Saturday
-    
+
     // Calcula el inicio de la semana (Domingo)
     const startOfWeek = new Date(date);
     startOfWeek.setDate(date.getDate() - day); // Ir al domingo
     startOfWeek.setHours(0, 0, 0, 0);
-    
+
     // Calcula el fin de la semana (Viernes)
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 5); // 0 (Dom) + 5 = 5 (Vie)
     endOfWeek.setHours(23, 59, 59, 999);
-    
+
     return { startOfWeek, endOfWeek };
 };
 
@@ -64,7 +64,7 @@ const getWeekLimits = (date) => {
 /**
  * Guarda un resumen del reporte diario en la base de datos.
  * @param {object} reportData - Los datos del reporte a guardar.
- * @returns {Promise<string>} - El ID del nuevo documento de reporte.
+ * @returns {Promise<string>} - El ID del нового documento de reporte.
  */
 export const saveDailyReport = async (reportData) => {
     const docRef = await addDoc(reportsCollection, reportData);
@@ -105,16 +105,16 @@ export const getTaskById = (taskId) => {
  */
 export const getTasksForWeeklyReport = async (userId, date, isSupervisor) => {
     const { startOfWeek, endOfWeek } = getWeekLimits(date);
-    
+
     const fieldToQuery = isSupervisor ? "assignerId" : "assignedToId";
-    
+
     const q = query(
         tasksCollection,
         where(fieldToQuery, "==", userId),
         where("deadline", ">=", startOfWeek),
         where("deadline", "<=", endOfWeek)
     );
-    
+
     const querySnapshot = await getDocs(q);
     const tasks = [];
     querySnapshot.forEach((doc) => {
@@ -131,14 +131,14 @@ export const getTasksForWeeklyReport = async (userId, date, isSupervisor) => {
  */
 export const getAssignedTasksForDate = async (assignerId, date) => {
     const { startOfDay, endOfDay } = getDayLimits(date);
-    
+
     const q = query(
         tasksCollection,
         where("assignerId", "==", assignerId),
         where("deadline", ">=", startOfDay),
         where("deadline", "<=", endOfDay)
     );
-    
+
     const querySnapshot = await getDocs(q);
     const tasks = [];
     querySnapshot.forEach((doc) => {
@@ -156,14 +156,14 @@ export const getAssignedTasksForDate = async (assignerId, date) => {
  */
 export const getAssignedTasksByDate = (assignerId, selectedDate, callback) => {
     const { startOfDay, endOfDay } = getDayLimits(selectedDate);
-    
+
     const q = query(
         tasksCollection,
         where("assignerId", "==", assignerId),
         where("deadline", ">=", startOfDay),
         where("deadline", "<=", endOfDay)
     );
-    
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
         const tasks = [];
         snapshot.forEach(doc => {
@@ -200,14 +200,14 @@ export const getAssignedTasks = (assignerId, callback) => {
  */
 export const getTasksForReport = async (userId, date) => {
     const { startOfDay, endOfDay } = getDayLimits(date);
-    
+
     const q = query(
         tasksCollection,
         where("assignedToId", "==", userId),
         where("deadline", ">=", startOfDay),
         where("deadline", "<=", endOfDay)
     );
-    
+
     const querySnapshot = await getDocs(q);
     const tasks = [];
     querySnapshot.forEach((doc) => {
@@ -225,14 +225,14 @@ export const getTasksForReport = async (userId, date) => {
  */
 export const getTasksByDate = (userId, selectedDate, callback) => {
     const { startOfDay, endOfDay } = getDayLimits(selectedDate);
-    
+
     const q = query(
         tasksCollection,
         where("assignedToId", "==", userId),
         where("deadline", ">=", startOfDay),
         where("deadline", "<=", endOfDay)
     );
-    
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
         const tasks = [];
         snapshot.forEach(doc => {
@@ -267,13 +267,19 @@ export const getTasks = (userId, callback) => {
  * @returns {Promise} - Promesa de la operación de creación.
  */
 export const createTask = (taskData) => {
-    const data = { 
-        ...taskData, 
-        createdAt: Timestamp.now(), 
-        status: taskData.status || 'pending' 
+    const data = {
+        ...taskData,
+        createdAt: Timestamp.now(),
+        status: taskData.status || 'pending',
+        negotiationHistory: [],
+        proposalCounts: {
+            supervisor: 0,
+            supervised: 0,
+        }
     };
     return addDoc(tasksCollection, data);
 };
+
 
 /**
  * Elimina una tarea por su ID.

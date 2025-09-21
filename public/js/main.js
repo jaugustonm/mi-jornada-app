@@ -77,6 +77,12 @@ const supervisorRejectionModal = document.getElementById('supervisor-rejection-o
 const restoreOriginalPenaltyBtn = document.getElementById('restore-original-penalty-btn');
 const proposeNewPenaltyBtn = document.getElementById('propose-new-penalty-btn');
 
+// ELEMENTOS PARA LA ASISTENCIA DE IA
+const aiAssistanceModal = document.getElementById('ai-assistance-modal');
+const aiPromptContainer = document.getElementById('ai-prompt-container');
+const finalPenaltyForm = document.getElementById('final-penalty-form');
+
+
 // --- VARIABLES GLOBALES ---
 let currentUser = null;
 let currentUserProfile = null;
@@ -146,14 +152,12 @@ const getWeekLimits = (date) => {
  * Carga las tareas para la fecha seleccionada
  */
 const loadTasksForSelectedDate = () => {
-    // Limpiar suscripción anterior si existe
     if (unsubscribe) unsubscribe();
 
-    if (!currentUser || !currentUserProfile) return;
+    if (!currentUser || !currentUser.uid || !currentUserProfile) return;
 
     console.log('Cargando tareas para fecha:', selectedDate);
 
-    // Cargar tareas según el rol del usuario y la fecha seleccionada
     if (currentUserProfile.role === 'supervisor') {
         unsubscribe = getAssignedTasksByDate(currentUser.uid, selectedDate, displayTasks);
     } else {
@@ -172,7 +176,6 @@ const displayTasks = (tasks) => {
 
     if (!currentUserProfile) return;
 
-    // Si no hay tareas para el día seleccionado
     if (tasks.length === 0) {
         const noTasksMessage = `
             <div class="task-card" style="text-align: center; color: #666;">
@@ -435,7 +438,17 @@ const handlePenaltySuggestion = async (e) => {
     }
     const penaltyData = {
         title, description, deadline: new Date(deadline), isMandatory: true,
-        assignerId: currentUser.uid, assignedToId: assignedToId, status: 'pending_acceptance'
+        assignerId: currentUser.uid, assignedToId: assignedToId, status: 'pending_acceptance',
+        negotiationHistory: [{
+            proposer: 'supervisor',
+            title,
+            description,
+            date: new Date(),
+        }],
+        proposalCounts: {
+            supervisor: 1,
+            supervised: 0,
+        }
     };
     try {
         await createTask(penaltyData);
@@ -457,27 +470,95 @@ const handleNegotiation = async (e) => {
     const description = document.getElementById('negotiation-description').value;
     const { taskId, isSupervisorCounter } = negotiationContext;
 
+    const taskDoc = await getTaskById(taskId);
+    if (!taskDoc.exists()) {
+        alert("La tarea ya no existe.");
+        return;
+    }
+    const taskData = taskDoc.data();
+    const proposalCounts = taskData.proposalCounts || { supervisor: 0, supervised: 0 };
+    const negotiationHistory = taskData.negotiationHistory || [];
+    const userRole = currentUserProfile.role;
+
     if (taskId && title && description) {
+        const newProposal = {
+            proposer: userRole,
+            title,
+            description,
+            date: new Date(),
+        };
+
         if (isSupervisorCounter) {
-            // El supervisor está haciendo una contrapropuesta
             await updateDocument('tasks', taskId, {
-                title, description, status: 'pending_acceptance', counterProposal: null
+                title, description, status: 'pending_acceptance', counterProposal: null,
+                negotiationHistory: [...negotiationHistory, newProposal],
+                proposalCounts: {
+                    ...proposalCounts,
+                    supervisor: proposalCounts.supervisor + 1,
+                },
             });
             alert("Contrapropuesta enviada al supervisado.");
         } else {
-            // El supervisado está haciendo la propuesta inicial
             await updateDocument('tasks', taskId, {
                 status: 'counter-proposed',
-                counterProposal: { title, description }
+                counterProposal: { title, description },
+                negotiationHistory: [...negotiationHistory, newProposal],
+                proposalCounts: {
+                    ...proposalCounts,
+                    supervised: proposalCounts.supervised + 1,
+                },
             });
             alert("Contrapropuesta enviada al supervisor.");
         }
         negotiationModal.classList.add('hidden');
         negotiationForm.reset();
-        negotiationContext = { taskId: null, isSupervisorCounter: false }; // Reset context
+        negotiationContext = { taskId: null, isSupervisorCounter: false };
     }
 };
 
+/**
+ * Muestra el modal de asistencia de IA solo al supervisor.
+ * @param {object} task - El objeto de la tarea con el historial de negociación.
+ * @param {string} taskId - El ID del documento de la tarea.
+ */
+const showAIAssistanceModal = (task, taskId) => { // **CORRECCIÓN AQUÍ**
+    if (currentUserProfile.role !== 'supervisor') {
+        alert("Se ha alcanzado el límite de propuestas. El supervisor definirá la penalidad final.");
+        return;
+    }
+    let prompt = `El supervisor y el supervisado han llegado a un punto muerto en la negociación de una penalidad. A continuación se presenta el historial de propuestas. Analiza todas las alternativas y sugiere una penalidad justa y razonable que sirva como punto medio y fomente el crecimiento.\n\n`;
+    const history = task.negotiationHistory || [];
+    history.forEach((proposal, index) => {
+        prompt += `Propuesta ${index + 1} (${proposal.proposer}):\n`;
+        prompt += `Título: ${proposal.title}\n`;
+        prompt += `Descripción: ${proposal.description}\n\n`;
+    });
+
+    aiPromptContainer.textContent = prompt;
+    aiAssistanceModal.classList.remove('hidden');
+    negotiationContext.taskId = taskId; // **CORRECCIÓN AQUÍ**
+};
+
+
+const handleFinalPenalty = async (e) => {
+    e.preventDefault();
+    const title = document.getElementById('final-penalty-title').value;
+    const description = document.getElementById('final-penalty-description').value;
+    const { taskId } = negotiationContext;
+
+    if (taskId && title && description) {
+        await updateDocument('tasks', taskId, {
+            title,
+            description,
+            status: 'final_penalty',
+            isMandatory: true,
+        });
+        alert("Penalidad final establecida.");
+        aiAssistanceModal.classList.add('hidden');
+        finalPenaltyForm.reset();
+        negotiationContext = { taskId: null, isSupervisorCounter: false };
+    }
+};
 /**
  * Maneja la creación de nuevas tareas
  */
@@ -534,6 +615,7 @@ document.addEventListener('DOMContentLoaded', () => {
     penaltyForm.addEventListener('submit', handlePenaltySuggestion);
     negotiationForm.addEventListener('submit', handleNegotiation);
     rewardForm.addEventListener('submit', handleRewardAssignment);
+    finalPenaltyForm.addEventListener('submit', handleFinalPenalty);
 
     // Filtros de fecha
     dateFilter.addEventListener('change', (e) => {
@@ -546,7 +628,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateSelectedDateDisplay();
         loadTasksForSelectedDate();
     });
-    
+
     // Botones de modales y cámara
     addTaskButton.addEventListener('click', () => addTaskModal.classList.remove('hidden'));
     captureButton.addEventListener('click', capturePhoto);
@@ -571,6 +653,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!taskCard) return;
 
         const taskId = taskCard.dataset.id;
+        const taskDoc = await getTaskById(taskId);
+        if (!taskDoc.exists()) return;
+        const taskData = taskDoc.data();
+        const proposalCounts = taskData.proposalCounts || { supervisor: 0, supervised: 0 };
+
 
         if (e.target.classList.contains('complete-btn')) {
             await updateDocument('tasks', taskId, { status: 'completed' });
@@ -579,7 +666,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (e.target.classList.contains('reject-btn')) {
             await updateDocument('tasks', taskId, { status: 'pending' });
         } else if (e.target.classList.contains('evidence-btn')) {
-            currentTaskId = taskId; // Usamos la variable global original para la cámara
+            currentTaskId = taskId;
             openCamera();
         } else if (e.target.classList.contains('accept-btn')) {
             await updateDocument('tasks', taskId, {
@@ -592,12 +679,15 @@ document.addEventListener('DOMContentLoaded', () => {
             await updateDocument('tasks', taskId, { status: 'rejected' });
             alert("Penalidad rechazada. Ahora puedes proponer una alternativa.");
         } else if (e.target.classList.contains('propose-alternative-btn')) {
+            if (proposalCounts.supervised >= 2) {
+                await updateDocument('tasks', taskId, { status: 'negotiation_locked' });
+                alert("Has alcanzado tu límite de propuestas. El supervisor establecerá la penalidad final.");
+                return;
+            }
             negotiationContext = { taskId, isSupervisorCounter: false };
             negotiationModalTitle.textContent = "Proponer Alternativa";
             negotiationModal.classList.remove('hidden');
         } else if (e.target.classList.contains('accept-proposal-btn')) {
-            const taskDoc = await getTaskById(taskId);
-            const taskData = taskDoc.data();
             if (taskData.counterProposal) {
                 await updateDocument('tasks', taskId, {
                     title: taskData.counterProposal.title,
@@ -608,8 +698,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert("Contrapropuesta aceptada.");
             }
         } else if (e.target.classList.contains('reject-proposal-btn')) {
+            if (proposalCounts.supervisor >= 2) {
+                showAIAssistanceModal(taskData, taskId); // **CORRECCIÓN AQUÍ**
+                return;
+            }
             negotiationContext.taskId = taskId;
             supervisorRejectionModal.classList.remove('hidden');
+        } else if (e.target.classList.contains('set-final-penalty-btn')) {
+            showAIAssistanceModal(taskData, taskId); // **CORRECCIÓN AQUÍ**
         }
     });
 

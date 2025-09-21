@@ -14,7 +14,14 @@ export const renderTask = (task, userRole) => {
         isPenalty = '<span class="penalty-badge" style="background-color: #FFC107;">Contrapropuesta</span>';
     } else if (task.status === 'rejected') {
         isPenalty = '<span class="penalty-badge" style="background-color: #F44336;">Rechazada</span>';
+    } else if (task.status === 'final_penalty') {
+        isPenalty = '<span class="penalty-badge" style="background-color: #000000;">Penalidad Final</span>';
+    } else if (task.status === 'negotiation_locked') {
+        isPenalty = '<span class="penalty-badge" style="background-color: #607D8B;">Decisión Final</span>';
     }
+
+
+    const proposalCounts = task.proposalCounts || { supervisor: 0, supervised: 0 };
 
     const getActionButtons = () => {
         // Vistas para el Supervisado
@@ -26,15 +33,22 @@ export const renderTask = (task, userRole) => {
                         <button class="decline-btn">❌ Rechazar</button>
                     `;
                 case 'rejected':
-                    return `<button class="propose-alternative-btn">↪️ Proponer Alternativa</button>`;
+                    if (proposalCounts.supervised < 2) {
+                        return `<button class="propose-alternative-btn">↪️ Proponer Alternativa</button>`;
+                    } else {
+                        return `<p class="status-negotiation">Límite de propuestas alcanzado.</p>`;
+                    }
                 case 'pending':
                 case 'accepted':
+                case 'final_penalty':
                     return `
                         <button class="complete-btn">✅ Completar</button>
                         <button class="evidence-btn">📸 Subir Evidencia</button>
                     `;
                 case 'counter-proposed':
                     return `<p class="status-negotiation">Esperando respuesta del supervisor...</p>`;
+                case 'negotiation_locked':
+                    return `<p class="status-negotiation">Negociación bloqueada. Esperando la decisión final del supervisor.</p>`;
             }
         }
 
@@ -47,14 +61,26 @@ export const renderTask = (task, userRole) => {
                         <button class="reject-btn">👎 Rechazar</button>
                     `;
                 case 'counter-proposed':
-                    return `
-                        <button class="accept-proposal-btn">✔️ Aceptar Propuesta</button>
-                        <button class="reject-proposal-btn">✖️ Rechazar Propuesta</button>
-                    `;
+                    if (proposalCounts.supervisor < 2) {
+                        return `
+                            <button class="accept-proposal-btn">✔️ Aceptar Propuesta</button>
+                            <button class="reject-proposal-btn">✖️ Rechazar Propuesta</button>
+                        `;
+                    } else {
+                        // Si el supervisor ya no tiene propuestas, debe definir la penalidad final
+                        return `<button class="set-final-penalty-btn">Definir Penalidad Final</button>`;
+                    }
                  case 'pending_acceptance':
                     return `<p class="status-negotiation">Esperando respuesta del supervisado...</p>`;
                  case 'rejected':
-                    return `<p class="status-negotiation">Penalidad rechazada por el supervisado.</p>`;
+                    // **CORRECCIÓN CLAVE AQUÍ:** Dar al supervisor una acción cuando la penalidad es rechazada.
+                    if (proposalCounts.supervisor < 2) {
+                        return `<button class="reject-proposal-btn">↪️ Hacer Contrapropuesta</button>`;
+                    } else {
+                        return `<button class="set-final-penalty-btn">Definir Penalidad Final</button>`;
+                    }
+                 case 'negotiation_locked':
+                    return `<button class="set-final-penalty-btn">Definir Penalidad Final</button>`;
             }
         }
 
@@ -62,12 +88,11 @@ export const renderTask = (task, userRole) => {
             return `<p class="status-validated">Tarea Validada ✔️</p>`;
         }
         
-        // Botón de evidencia por defecto si no hay otras acciones principales
         if (task.status !== 'completed' && task.status !== 'validated') {
              return `<button class="evidence-btn">📸 Subir Evidencia</button>`;
         }
 
-        return ''; // No mostrar botones en otros casos
+        return '';
     };
 
     let counterProposalHTML = '';

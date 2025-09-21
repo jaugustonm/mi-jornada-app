@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Jornada Divertida</title>
-    
+
     <link rel="icon" href="data:,">
 
     <link rel="stylesheet" href="css/style.css">
@@ -91,7 +91,7 @@
                 <hr>
                 <button id="assign-reward-button">Asignar Recompensa</button>
             </div>
-            
+
             <div id="penalty-actions" class="hidden">
                 <hr>
                 <h3>Sugerir una Penalidad</h3>
@@ -102,11 +102,11 @@
                     <button type="submit">Sugerir Penalidad</button>
                 </form>
             </div>
-            
+
             <button id="close-report-button">Cerrar</button>
         </div>
     </div>
-    
+
     <div id="weekly-report-modal" class="modal hidden">
         <div class="modal-content">
             <h2>Reporte Semanal de Cumplimiento</h2>
@@ -148,6 +148,22 @@
             </div>
         </div>
     </div>
+
+    <div id="ai-assistance-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Asistencia de IA para Penalidad</h2>
+            <p>Se ha alcanzado el límite de negociaciones. Copia el siguiente texto y pégalo en tu IA de preferencia para obtener una penalidad justa y razonable.</p>
+            <pre id="ai-prompt-container"></pre>
+            <hr>
+            <h3>Establecer Penalidad Final</h3>
+            <form id="final-penalty-form">
+                <input type="text" id="final-penalty-title" placeholder="Título de la penalidad final" required>
+                <textarea id="final-penalty-description" placeholder="Descripción de la penalidad final..." required></textarea>
+                <button type="submit">Guardar Penalidad Final</button>
+            </form>
+        </div>
+    </div>
+
 
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>

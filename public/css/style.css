@@ -299,7 +299,7 @@ main {
     margin-top: 20px;
 }
 
-#add-task-form, #penalty-form, #negotiation-form {
+#add-task-form, #penalty-form, #negotiation-form, #final-penalty-form {
     display: flex;
     flex-direction: column;
     gap: 15px;
@@ -309,9 +309,11 @@ main {
 #add-task-form input,
 #penalty-form input,
 #negotiation-form input,
+#final-penalty-form input,
 #add-task-form textarea,
 #penalty-form textarea,
-#negotiation-form textarea {
+#negotiation-form textarea,
+#final-penalty-form textarea {
     width: 95%;
     padding: 10px;
     border-radius: 5px;
@@ -319,12 +321,12 @@ main {
     font-family: var(--font-main);
 }
 
-#add-task-form textarea, #penalty-form textarea, #negotiation-form textarea {
+#add-task-form textarea, #penalty-form textarea, #negotiation-form textarea, #final-penalty-form textarea {
     min-height: 80px;
     resize: vertical;
 }
 
-#add-task-form button, #penalty-form button, #negotiation-form button {
+#add-task-form button, #penalty-form button, #negotiation-form button, #final-penalty-form button {
     padding: 12px;
     border: none;
     border-radius: 5px;
@@ -369,3 +371,15 @@ main {
 
 #restore-original-penalty-btn { background-color: var(--secondary-color); color: var(--text-color); }
 #propose-new-penalty-btn { background-color: var(--accent-color); color: white; }
+
+#ai-prompt-container {
+    background-color: #f0f0f0;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: left;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+}
