@@ -430,3 +430,9 @@ main {
     overflow-y: auto;
     border: 1px solid #ccc;
 }
+
+.status-expired {
+    color: #f44336; /* Rojo */
+    font-weight: bold;
+    font-style: italic;
+}

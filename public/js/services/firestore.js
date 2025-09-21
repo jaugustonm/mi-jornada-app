@@ -1,6 +1,5 @@
 // ======================================================================
 // ARCHIVO ACTUALIZADO: js/services/firestore.js
-// Con funciones para filtrar por fecha, rango semanal y manejar comentarios.
 // ======================================================================
 
 import { db } from '../config/firebase-config.js';
@@ -338,8 +337,9 @@ export const createTask = (taskData) => {
         ...taskData,
         createdAt: Timestamp.now(),
         status: taskData.status || 'pending',
-        negotiationHistory: [],
-        proposalCounts: {
+        // MODIFICADO: Usa los datos del historial si se proveen, si no, usa un array vacío
+        negotiationHistory: taskData.negotiationHistory || [],
+        proposalCounts: taskData.proposalCounts || {
             supervisor: 0,
             supervised: 0,
         }
