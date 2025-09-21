@@ -18,7 +18,8 @@ import {
     deleteTask,
     getTaskById,
     addCommentToTask,
-    getTasksForTimeRange
+    getTasksForTimeRange,
+    getCommentsForTask
 } from './services/firestore.js';
 import { renderTask } from './ui/components.js';
 import { uploadImage } from './services/cloudinary.js';
@@ -197,10 +198,8 @@ const displayTasks = async (tasks) => {
         return;
     }
 
-    // La organización por hora límite (de más urgente a menos) ya se hace aquí.
     tasks.sort((a, b) => (a.deadline?.toDate() || 0) - (b.deadline?.toDate() || 0));
 
-    // Obtenemos la hora segura para pasarla al renderizador
     const now = await getSecureTime();
 
     tasks.forEach(task => {
@@ -221,6 +220,23 @@ const displayTasks = async (tasks) => {
             } else {
                 document.getElementById('afternoon-tasks-pending').innerHTML += taskHTML;
             }
+        }
+    });
+
+    tasks.forEach(task => {
+        const commentsContainer = document.querySelector(`.task-card[data-id="${task.id}"] .task-comments-container`);
+        if (commentsContainer) {
+            getCommentsForTask(task.id, (comments) => {
+                let commentsHTML = '<h4>Comentarios:</h4>';
+                if (comments.length > 0) {
+                    comments.forEach(comment => {
+                        commentsHTML += `<div class="task-comment"><strong>${comment.authorEmail || 'Usuario'}:</strong> ${comment.text}</div>`;
+                    });
+                } else {
+                    commentsHTML += `<p>No hay comentarios.</p>`;
+                }
+                commentsContainer.innerHTML = commentsHTML;
+            });
         }
     });
 };
@@ -801,10 +817,16 @@ document.addEventListener('DOMContentLoaded', () => {
     generateWeeklyReportButton.addEventListener('click', generateWeeklyReport);
     closeWeeklyReportButton.addEventListener('click', () => weeklyReportModal.classList.add('hidden'));
 
+    // --- MODIFICADO ---
+    // Maneja el cierre de cualquier modal y resetea el ID de la tarea si es necesario
     document.addEventListener('click', (e) => {
         if (e.target.classList.contains('modal')) {
             e.target.classList.add('hidden');
             if (e.target === cameraModal) closeCamera();
+            // Si el modal de comentarios se cierra, reseteamos el ID para evitar errores
+            if (e.target === commentModal) {
+                currentTaskId = null;
+            }
         }
     });
 

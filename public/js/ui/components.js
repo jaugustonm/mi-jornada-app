@@ -13,11 +13,9 @@ export const renderTask = (task, userRole, now) => {
     const isMandatory = task.isMandatory ? '<span class="mandatory-badge">Obligatorio</span>' : '';
     let specialStatusBadge = '';
 
-    // --- NUEVA LÓGICA DE HORA LÍMITE ---
     const deadline = task.deadline?.toDate();
     const deadlineTime = deadline ? deadline.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : 'Sin hora';
     const isPastDeadline = deadline ? now > deadline : false;
-    // --- FIN DE LA NUEVA LÓGICA ---
 
     if (task.taskType === 'penalty') {
         if (task.status === 'pending_acceptance') {
@@ -35,11 +33,9 @@ export const renderTask = (task, userRole, now) => {
         specialStatusBadge = '<span class="penalty-badge" style="background-color: #2196F3;">Pendiente de Aceptación</span>';
     }
 
-
     const proposalCounts = task.proposalCounts || { supervisor: 0, supervised: 0 };
 
     const getActionButtons = () => {
-        // Vistas para el Supervisado
         if (userRole === 'supervisado') {
             let supervisedButtons = `<button class="add-comment-btn">💬 Añadir Comentario</button>`;
             switch (task.status) {
@@ -70,15 +66,11 @@ export const renderTask = (task, userRole, now) => {
                 case 'pending':
                 case 'accepted':
                 case 'final_penalty':
-                    // --- LÓGICA MODIFICADA ---
                     if (isPastDeadline) {
                         supervisedButtons += `<p class="status-expired">El tiempo para completar esta tarea ha expirado.</p>`;
                     } else {
-                        supervisedButtons += `
-                            <button class="evidence-btn">📸 Subir Evidencia para Completar</button>
-                        `;
+                        supervisedButtons += `<button class="evidence-btn">📸 Subir Evidencia para Completar</button>`;
                     }
-                    // --- FIN DE LA LÓGICA MODIFICADA ---
                     break;
                 case 'counter-proposed':
                     supervisedButtons += `<p class="status-negotiation">Esperando respuesta del supervisor...</p>`;
@@ -90,10 +82,18 @@ export const renderTask = (task, userRole, now) => {
             return supervisedButtons;
         }
 
-
-        // Vistas para el Supervisor
         if (userRole === 'supervisor') {
+            // --- MODIFICADO ---
+            // El supervisor siempre puede comentar.
             let supervisorButtons = `<button class="add-comment-btn">💬 Añadir Comentario</button>`;
+
+            // Si la tarea expiró, se añade el mensaje y no se muestran más botones de acción.
+            if (isPastDeadline && task.status !== 'completed' && task.status !== 'validated') {
+                supervisorButtons += `<p class="status-expired">El tiempo para completar esta tarea ha expirado.</p>`;
+                return supervisorButtons;
+            }
+            
+            // Si no ha expirado, se añaden los botones correspondientes al estado.
             switch (task.status) {
                 case 'completed':
                     supervisorButtons += `
@@ -111,10 +111,10 @@ export const renderTask = (task, userRole, now) => {
                         supervisorButtons += `<button class="set-final-penalty-btn">Definir Penalidad Final</button>`;
                     }
                     break;
-                 case 'pending_acceptance':
-                     supervisorButtons += `<p class="status-negotiation">Esperando aceptación del supervisado...</p>`;
-                     break;
-                 case 'rejected':
+                case 'pending_acceptance':
+                    supervisorButtons += `<p class="status-negotiation">Esperando aceptación del supervisado...</p>`;
+                    break;
+                case 'rejected':
                     if (task.taskType === 'penalty') {
                         if (proposalCounts.supervisor < 2) {
                             supervisorButtons += `<button class="reject-proposal-btn">↪️ Hacer Contrapropuesta</button>`;
@@ -126,9 +126,9 @@ export const renderTask = (task, userRole, now) => {
                                               <button class="reject-btn delete-task-btn">🗑️ Eliminar Tarea</button>`;
                     }
                     break;
-                 case 'negotiation_locked':
-                     supervisorButtons += `<button class="set-final-penalty-btn">Definir Penalidad Final</button>`;
-                     break;
+                case 'negotiation_locked':
+                    supervisorButtons += `<button class="set-final-penalty-btn">Definir Penalidad Final</button>`;
+                    break;
             }
             return supervisorButtons;
         }
@@ -137,7 +137,6 @@ export const renderTask = (task, userRole, now) => {
             return `<p class="status-validated">Tarea Validada ✔️</p>`;
         }
         
-        // Esta lógica parece redundante con la de arriba, se puede revisar en el futuro.
         if (userRole === 'supervisado' && task.status !== 'completed' && task.status !== 'validated') {
              if (isPastDeadline) {
                  return `<p class="status-expired">El tiempo para completar esta tarea ha expirado.</p>`;
@@ -149,11 +148,8 @@ export const renderTask = (task, userRole, now) => {
     };
 
     let taskContentHTML;
-    
-    // --- CAMBIO: Añadido párrafo con la hora límite ---
     const deadlineHTML = `<p><strong>Hora Límite:</strong> <span class="${isPastDeadline ? 'status-expired' : ''}">${deadlineTime}</span></p>`;
 
-    // Si la tarea está en estado de contrapropuesta, muestra la vista de comparación.
     if (task.status === 'counter-proposed' && task.counterProposal) {
         taskContentHTML = `
             <h3>Negociación de Penalidad ${isMandatory} ${specialStatusBadge}</h3>
@@ -172,31 +168,13 @@ export const renderTask = (task, userRole, now) => {
             </div>
         `;
     } else {
-        // Para todos los demás estados, muestra la vista normal.
+        const titlePrefix = task.taskType === 'penalty' ? 'Penalidad' : 'Tarea';
         taskContentHTML = `
-            <h3>${task.title} ${isMandatory} ${specialStatusBadge}</h3>
+            <h3>${titlePrefix}: ${task.title} ${isMandatory} ${specialStatusBadge}</h3>
             ${deadlineHTML}
             <p>${task.description}</p>
         `;
     }
-
-
-    // Cargar y mostrar comentarios
-    setTimeout(() => {
-        const commentsContainer = document.querySelector(`.task-card[data-id="${task.id}"] .task-comments-container`);
-        if (commentsContainer) {
-            getCommentsForTask(task.id, (comments) => {
-                commentsContainer.innerHTML = '<h4>Comentarios:</h4>';
-                if (comments.length > 0) {
-                    comments.forEach(comment => {
-                        commentsContainer.innerHTML += `<div class="task-comment">${comment.text}</div>`;
-                    });
-                } else {
-                    commentsContainer.innerHTML += `<p>No hay comentarios.</p>`;
-                }
-            });
-        }
-    }, 0);
 
     return `
         <div class="task-card ${statusClass}" data-id="${task.id}">
@@ -205,7 +183,7 @@ export const renderTask = (task, userRole, now) => {
                 ${getActionButtons()}
             </div>
             <div class="task-comments-container">
-            </div>
+                </div>
             ${task.evidence?.url ? `<a href="${task.evidence.url}" target="_blank">Ver evidencia</a>` : ''}
         </div>
     `;
