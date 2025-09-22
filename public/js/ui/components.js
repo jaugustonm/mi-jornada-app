@@ -38,7 +38,6 @@ export const renderTask = (task, userRole, now) => {
     const proposalCounts = task.proposalCounts || { supervisor: 0, supervised: 0 };
 
     const getActionButtons = () => {
-        // --- NUEVO: Lógica para la penalidad semanal ---
         if (task.taskType === 'weekly-penalty') {
             const evidenceCount = task.evidence?.length || 0;
             if (userRole === 'supervisado') {
@@ -117,6 +116,7 @@ export const renderTask = (task, userRole, now) => {
                     supervisorButtons += `
                         <button class="validate-btn">👍 Validar</button>
                         <button class="reject-btn">👎 Rechazar</button>
+                        <button class="notify-third-party-btn" style="background-color: #FF9800; color: white;">🔔 Notificar a Terceros</button>
                     `;
                     break;
                 case 'counter-proposed':
@@ -155,6 +155,13 @@ export const renderTask = (task, userRole, now) => {
             return `<p class="status-validated">Tarea Validada ✔️</p>`;
         }
         
+        if (task.status === 'notified_third_party') {
+            return `<div class="status-notified">
+                        <h4>🔔 Aviso a Terceros Enviado</h4>
+                        <p>"${task.notificationDetails}"</p>
+                    </div>`;
+        }
+
         return '';
     };
 
@@ -187,7 +194,6 @@ export const renderTask = (task, userRole, now) => {
         `;
     }
     
-    // Muestra las evidencias de la penalidad semanal
     let evidenceHTML = '';
     if (task.taskType === 'weekly-penalty' && task.evidence && task.evidence.length > 0) {
         evidenceHTML += '<h4>Evidencias:</h4><div class="evidence-gallery">';
