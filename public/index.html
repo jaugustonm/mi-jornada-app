@@ -7,6 +7,9 @@
 
     <link rel="icon" href="data:,">
 
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1d3557">
+
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/animations.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -101,7 +104,6 @@
             </form>
         </div>
     </div>
-
     <div id="camera-modal" class="modal hidden">
         <div class="modal-content">
             <video id="camera-feed" autoplay playsinline></video>
@@ -110,7 +112,6 @@
             <button id="upload-button" class="hidden">Subir Evidencia</button>
         </div>
     </div>
-
     <div id="comment-modal" class="modal hidden">
         <div class="modal-content">
             <h2>Añadir Comentario</h2>
@@ -120,7 +121,6 @@
             </form>
         </div>
     </div>
-
     <div id="report-modal" class="modal hidden">
         <div class="modal-content">
             <h2 id="report-modal-title">Reporte de Cumplimiento</h2>
@@ -129,7 +129,6 @@
                 <hr>
                 <button id="assign-reward-button">Asignar Recompensa</button>
             </div>
-
             <div id="penalty-actions" class="hidden">
                 <hr>
                 <h3>Sugerir una Penalidad</h3>
@@ -146,11 +145,9 @@
                     <button type="submit">Sugerir Penalidad</button>
                 </form>
             </div>
-
             <button id="close-report-button">Cerrar</button>
         </div>
     </div>
-
     <div id="weekly-report-modal" class="modal hidden">
         <div class="modal-content">
             <h2>Reporte Semanal de Cumplimiento</h2>
@@ -160,7 +157,6 @@
             <button id="close-weekly-report-button">Cerrar</button>
         </div>
     </div>
-
     <div id="reward-modal" class="modal hidden">
         <div class="modal-content">
             <h2>Asignar Recompensa</h2>
@@ -170,7 +166,6 @@
             </form>
         </div>
     </div>
-
     <div id="negotiation-modal" class="modal hidden">
         <div class="modal-content">
             <h2 id="negotiation-modal-title">Proponer Alternativa</h2>
@@ -185,7 +180,6 @@
             </form>
         </div>
     </div>
-
     <div id="supervisor-rejection-options-modal" class="modal hidden">
         <div class="modal-content">
             <h2>Rechazar Propuesta</h2>
@@ -207,7 +201,6 @@
             </form>
         </div>
     </div>
-
     <div id="ai-assistance-modal" class="modal hidden">
         <div class="modal-content">
             <h2>Asistencia de IA para Penalidad</h2>
@@ -242,6 +235,18 @@
         if (localStorage.getItem('darkMode') === 'true') {
             document.body.classList.add('dark-mode');
             darkModeToggle.textContent = '🌙';
+        }
+    </script>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then(registration => {
+                    console.log('ServiceWorker registrado con éxito:', registration.scope);
+                }).catch(error => {
+                    console.log('Fallo en el registro de ServiceWorker:', error);
+                });
+            });
         }
     </script>
 </body>
