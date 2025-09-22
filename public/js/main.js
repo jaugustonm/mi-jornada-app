@@ -404,14 +404,16 @@ const generateJornadaReport = async (jornada) => {
         endTime = new Date(selectedDate);
         endTime.setHours(12, 0, 0, 0);
         reportTitle = "Reporte de Jornada - Mañana";
-        isDefinitive = now.getHours() >= 12;
+        // CORRECCIÓN: Compara el objeto de la hora completa, no solo la hora.
+        isDefinitive = now >= endTime;
     } else {
         startTime = new Date(selectedDate);
         startTime.setHours(12, 0, 0, 1);
         endTime = new Date(selectedDate);
         endTime.setHours(17, 0, 0, 0);
         reportTitle = "Reporte de Jornada - Tarde";
-        isDefinitive = now.getHours() >= 17;
+        // CORRECCIÓN: Aplica la misma lógica para el reporte de la tarde.
+        isDefinitive = now >= endTime;
     }
 
     try {
