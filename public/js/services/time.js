@@ -9,8 +9,8 @@ const PRIMARY_TIME_API_URL = "https://worldtimeapi.org/api/timezone/Etc/UTC";
 // --- Variables para el Caché ---
 let cachedTime = null;
 let lastFetchTimestamp = 0;
-// Duración del caché de 30 minutos (30 * 60 * 1000 milisegundos).
-const CACHE_DURATION = 30 * 60 * 1000;
+// Duración del caché de 12 horas (12 * 60 * 60 * 1000 milisegundos).
+const CACHE_DURATION = 12 * 60 * 60 * 1000;
 
 /**
  * Obtiene la hora segura de un servidor externo.

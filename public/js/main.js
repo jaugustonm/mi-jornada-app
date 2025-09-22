@@ -634,6 +634,22 @@ const handleRewardAssignment = async (e) => {
  */
 const handlePenaltySuggestion = async (e) => {
     e.preventDefault();
+
+    // NUEVO: Verificación del límite de 3 penalidades por día
+    try {
+        const assignedTasks = await getAssignedTasksForDate(currentUser.uid, selectedDate);
+        const penaltiesCount = assignedTasks.filter(task => task.taskType === 'penalty' || task.taskType === 'weekly-penalty').length;
+        
+        if (penaltiesCount >= 3) {
+            alert("No se pueden imponer más de 3 penalidades por día.");
+            return;
+        }
+    } catch (error) {
+        console.error("Error al verificar el número de penalidades:", error);
+        alert("Error al verificar el límite de penalidades. No se creará la penalidad.");
+        return;
+    }
+
     const title = document.getElementById('penalty-title').value;
     const description = document.getElementById('penalty-description').value;
     const deadline = document.getElementById('penalty-deadline').value;
