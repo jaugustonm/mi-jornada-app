@@ -21,7 +21,8 @@ import {
     getTasksForTimeRange,
     getCommentsForTask,
     getSupervisorTasksByDate,
-    createUserProfile
+    createUserProfile,
+    getExistingWeeklyPenalty
 } from './services/firestore.js';
 import { renderTask } from './ui/components.js';
 import { uploadImage } from './services/cloudinary.js';
@@ -411,6 +412,12 @@ const uploadEvidence = async () => {
 const assignWeeklyPenalty = async (currentDate) => {
     if (!currentUser || !currentUserProfile || !currentUserProfile.supervisingId) {
         console.error("No se puede asignar la penalidad: falta información del usuario o del supervisado.");
+        return;
+    }
+
+    const alreadyExists = await getExistingWeeklyPenalty(currentUserProfile.supervisingId, currentDate);
+    if (alreadyExists) {
+        console.log("Ya existe una penalidad semanal para este fin de semana.");
         return;
     }
 

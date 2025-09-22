@@ -64,6 +64,29 @@ const getWeekLimits = (date) => {
     return { startOfWeek, endOfWeek };
 };
 
+/**
+ * Obtiene los límites del fin de semana (Sábado y Domingo).
+ * @param {Date} date - Una fecha dentro de la semana.
+ * @returns {object} - Objeto con startOfWeekend y endOfWeekend.
+ */
+const getWeekendLimits = (date) => {
+    const day = date.getDay();
+
+    const startOfWeek = new Date(date);
+    startOfWeek.setDate(date.getDate() - day);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const startOfWeekend = new Date(startOfWeek);
+    startOfWeekend.setDate(startOfWeek.getDate() + 6); // Sábado
+
+    const endOfWeekend = new Date(startOfWeek);
+    endOfWeekend.setDate(startOfWeek.getDate() + 7); // Domingo
+    endOfWeekend.setHours(23, 59, 59, 999);
+
+    return { startOfWeekend, endOfWeekend };
+};
+
+
 // --- FUNCIONES PARA COMENTARIOS ---
 
 /**
@@ -165,6 +188,27 @@ export const getTasksForWeeklyReport = async (userId, date, isSupervisor) => {
         tasks.push({ id: doc.id, ...doc.data() });
     });
     return tasks;
+};
+
+/**
+ * Verifica si ya existe una penalidad semanal para un fin de semana específico.
+ * @param {string} assignedToId - El ID del usuario supervisado.
+ * @param {Date} date - Una fecha dentro de la semana.
+ * @returns {Promise<boolean>} - Verdadero si ya existe una penalidad.
+ */
+export const getExistingWeeklyPenalty = async (assignedToId, date) => {
+    const { startOfWeekend, endOfWeekend } = getWeekendLimits(date);
+
+    const q = query(
+        tasksCollection,
+        where("assignedToId", "==", assignedToId),
+        where("taskType", "==", "weekly-penalty"),
+        where("deadline", ">=", startOfWeekend),
+        where("deadline", "<=", endOfWeekend)
+    );
+
+    const querySnapshot = await getDocs(q);
+    return !querySnapshot.empty;
 };
 
 /**
