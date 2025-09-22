@@ -44,6 +44,7 @@ const cameraFeed = document.getElementById('camera-feed');
 const photoCanvas = document.getElementById('photo-canvas');
 const captureButton = document.getElementById('capture-button');
 const uploadButton = document.getElementById('upload-button');
+const switchCameraButton = document.getElementById('switch-camera-button'); // Nuevo
 const commentModal = document.getElementById('comment-modal');
 const commentForm = document.getElementById('comment-form');
 
@@ -109,6 +110,7 @@ let negotiationContext = {
     taskId: null,
     isSupervisorCounter: false
 };
+let currentFacingMode = 'user'; // 'user' para frontal, 'environment' para trasera
 
 
 // --- FUNCIÓN PARA SOLICITAR PERMISO DE NOTIFICACIONES ---
@@ -295,7 +297,22 @@ const displayTasks = async (tasks) => {
  */
 const openCamera = async () => {
     try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        // --- LÓGICA DE CÁMARA MEJORADA ---
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+
+        if (videoDevices.length > 1) {
+            switchCameraButton.classList.remove('hidden');
+        }
+
+        const constraints = {
+            video: {
+                facingMode: { ideal: currentFacingMode }
+            },
+            audio: false
+        };
+
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
         cameraFeed.srcObject = stream;
         cameraModal.classList.remove('hidden');
     } catch (error) {
@@ -303,6 +320,18 @@ const openCamera = async () => {
         alert("No se pudo acceder a la cámara. Verifica los permisos.");
     }
 };
+
+/**
+ * Cambia entre la cámara frontal y trasera.
+ */
+const switchCamera = () => {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+    }
+    currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+    openCamera();
+};
+
 
 /**
  * Cierra la cámara y detiene el stream
@@ -315,6 +344,8 @@ const closeCamera = () => {
     cameraModal.classList.add('hidden');
     captureButton.style.display = 'inline-block';
     uploadButton.classList.add('hidden');
+    switchCameraButton.classList.add('hidden');
+    currentFacingMode = 'user'; // Resetea a la cámara frontal por defecto
 };
 
 /**
@@ -330,6 +361,7 @@ const capturePhoto = () => {
 
     captureButton.style.display = 'none';
     uploadButton.classList.remove('hidden');
+    switchCameraButton.classList.add('hidden');
 };
 
 /**
@@ -762,20 +794,52 @@ const handleNegotiation = async (e) => {
 };
 
 /**
- * Muestra el modal de asistencia de IA solo al supervisor.
+ * Muestra el modal de asistencia de IA solo al supervisor, con un prompt mejorado y robusto.
  */
 const showAIAssistanceModal = (task, taskId) => {
     if (currentUserProfile.role !== 'supervisor') {
         alert("Se ha alcanzado el límite de propuestas. El supervisor definirá la penalidad final.");
         return;
     }
-    let prompt = `El supervisor y el supervisado han llegado a un punto muerto en la negociación de una penalidad. A continuación se presenta el historial de propuestas. Analiza todas las alternativas y sugiere una penalidad justa y razonable que sirva como punto medio y fomente el crecimiento.\n\n`;
+
+    let prompt = `Como mediador experto en resolución de conflictos, tu objetivo es proponer una penalidad final que sea justa, equitativa y constructiva. Ambas partes, supervisor y supervisado, han llegado a un punto muerto en su negociación.
+
+A continuación se presenta el historial completo de la negociación. Analiza cuidadosamente cada propuesta, considerando las responsabilidades y los puntos de vista implícitos.
+
+**Historial de Negociación:**
+`;
+
     const history = task.negotiationHistory || [];
-    history.forEach((proposal, index) => {
-        prompt += `Propuesta ${index + 1} (${proposal.proposer}):\n`;
-        prompt += `Título: ${proposal.title}\n`;
-        prompt += `Descripción: ${proposal.description}\n\n`;
-    });
+
+    if (history.length > 0) {
+        history.forEach((proposal, index) => {
+            const proposerRole = proposal.proposer === 'supervisor' ? 'Supervisor' : 'Supervisado';
+            const title = proposal.title || '(Sin título)';
+            const description = proposal.description || '(Sin descripción)';
+            prompt += `
+--------------------------------
+**Propuesta ${index + 1} (propuesta por ${proposerRole}):**
+- **Título:** ${title}
+- **Descripción:** ${description}
+--------------------------------
+`;
+        });
+    } else {
+        prompt += "\nNo hay propuestas anteriores en el historial.\n";
+    }
+
+    prompt += `
+**Tu Tarea:**
+Basado en el historial, redacta una **penalidad final y definitiva**. Tu propuesta debe:
+1.  Ser un punto medio razonable entre las posturas.
+2.  Fomentar el aprendizaje y el crecimiento, no solo el castigo.
+3.  Ser clara, específica y accionable.
+
+**Formato de Respuesta (solo texto, sin markdown adicional):**
+- **Título Sugerido:** [Tu título para la penalidad final]
+- **Descripción Detallada:** [Tu descripción completa y clara de la penalidad]
+- **Justificación:** [Una breve explicación de por qué esta penalidad es la más adecuada, considerando el historial]
+`;
 
     aiPromptContainer.textContent = prompt;
     aiAssistanceModal.classList.remove('hidden');
@@ -914,6 +978,7 @@ document.addEventListener('DOMContentLoaded', () => {
     addTaskButton.addEventListener('click', () => addTaskModal.classList.remove('hidden'));
     captureButton.addEventListener('click', capturePhoto);
     uploadButton.addEventListener('click', uploadEvidence);
+    switchCameraButton.addEventListener('click', switchCamera); // Nuevo
     if(generateReportButton) {
         generateReportButton.addEventListener('click', generateReport);
     }
@@ -952,12 +1017,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.classList.contains('validate-btn')) {
             await updateDocument('tasks', taskId, { status: 'validated' });
         } else if (e.target.classList.contains('reject-btn')) {
+            // --- CORRECCIÓN MEJORADA ---
             if (taskData.taskType === 'weekly-penalty') {
                 await updateDocument('tasks', taskId, { status: 'rejected' });
                 alert("Evidencia rechazada. Ahora puedes notificar a un tercero.");
             } else {
-                await updateDocument('tasks', taskId, { status: 'pending' });
+                const isConfirmed = confirm("¿Estás seguro de que quieres rechazar esta evidencia? La tarea volverá al estado 'pendiente' para que se pueda subir una nueva evidencia.");
+                if (isConfirmed) {
+                    await updateDocument('tasks', taskId, {
+                        status: 'pending',
+                        evidence: null // Borra la evidencia anterior para forzar una nueva subida
+                    });
+                    alert("Evidencia rechazada. El supervisado deberá subir una nueva.");
+                }
             }
+            // --- FIN DE LA CORRECCIÓN ---
         } else if (e.target.classList.contains('evidence-btn')) {
             currentTaskId = taskId;
             openCamera();
