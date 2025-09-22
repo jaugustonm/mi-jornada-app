@@ -256,8 +256,8 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                // CORRECCIÓN FINAL: Apuntar a la ruta correcta '/public/sw.js'
-                navigator.serviceWorker.register('/public/sw.js').then(registration => {
+                // CORRECCIÓN: Apuntar a la ruta correcta '/sw.js' ya que 'public' es la raíz.
+                navigator.serviceWorker.register('/sw.js').then(registration => {
                     console.log('ServiceWorker registrado con éxito:', registration.scope);
                 }).catch(error => {
                     console.log('Fallo en el registro de ServiceWorker:', error);
