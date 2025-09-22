@@ -415,6 +415,7 @@ main {
 .propose-alternative-btn { background-color: #FFC107; color: var(--text-color); }
 .status-negotiation { font-style: italic; color: #666; }
 .add-comment-btn { background-color: #2196F3; color: white; }
+.notify-third-party-btn { background-color: #FF9800; color: white; }
 
 #restore-original-penalty-btn { background-color: var(--secondary-color); color: var(--text-color); }
 #propose-new-penalty-btn { background-color: var(--accent-color); color: white; }
@@ -435,4 +436,12 @@ main {
     color: #f44336; /* Rojo */
     font-weight: bold;
     font-style: italic;
+}
+
+.status-notified {
+    border-left: 4px solid #FF9800;
+    padding-left: 10px;
+    margin: 10px 0;
+    font-size: 0.9em;
+    color: #555;
 }

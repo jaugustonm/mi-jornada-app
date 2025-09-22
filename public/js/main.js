@@ -891,7 +891,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.classList.contains('validate-btn')) {
             await updateDocument('tasks', taskId, { status: 'validated' });
         } else if (e.target.classList.contains('reject-btn')) {
-            await updateDocument('tasks', taskId, { status: 'pending' });
+            if (taskData.taskType === 'weekly-penalty') {
+                await updateDocument('tasks', taskId, { status: 'rejected' });
+                alert("Evidencia rechazada. Ahora puedes notificar a un tercero.");
+            } else {
+                await updateDocument('tasks', taskId, { status: 'pending' });
+            }
         } else if (e.target.classList.contains('evidence-btn')) {
             currentTaskId = taskId;
             openCamera();
@@ -955,6 +960,15 @@ document.addEventListener('DOMContentLoaded', () => {
             supervisorRejectionModal.classList.remove('hidden');
         } else if (e.target.classList.contains('set-final-penalty-btn')) {
             showAIAssistanceModal(taskData, taskId);
+        } else if (e.target.classList.contains('notify-third-party-btn')) {
+             const notificationMessage = prompt("Escribe el mensaje que deseas enviar a un tercero:");
+             if (notificationMessage) {
+                await updateDocument('tasks', taskId, {
+                    status: 'notified_third_party',
+                    notificationDetails: notificationMessage
+                });
+                alert("Aviso a terceros enviado exitosamente.");
+             }
         }
     });
 

@@ -41,17 +41,32 @@ export const renderTask = (task, userRole, now) => {
         if (task.taskType === 'weekly-penalty') {
             const evidenceCount = task.evidence?.length || 0;
             if (userRole === 'supervisado') {
-                if (task.status === 'pending') {
+                if (task.status === 'pending' || task.status === 'rejected') {
                     return `<p>Fotos subidas: ${evidenceCount} / 7</p>
                             <button class="evidence-btn">📸 Subir Foto</button>
                             <button class="add-comment-btn">💬 Añadir Comentario</button>`;
+                } else if (task.status === 'completed') {
+                    return `<p>Fotos subidas: ${evidenceCount} / 7</p>
+                            <button class="add-comment-btn">💬 Añadir Comentario</button>
+                            <p class="status-negotiation">Esperando validación del supervisor...</p>`;
                 }
             } else if (userRole === 'supervisor') {
-                 if (task.status === 'completed') {
+                if (task.status === 'completed' || task.status === 'pending') {
                     return `<p>Fotos subidas: ${evidenceCount} / 7</p>
                             <button class="validate-btn">👍 Validar</button>
                             <button class="reject-btn">👎 Rechazar</button>
                             <button class="add-comment-btn">💬 Añadir Comentario</button>`;
+                } else if (task.status === 'rejected') {
+                    return `<p>Fotos subidas: ${evidenceCount} / 7</p>
+                            <p class="status-negotiation">Evidencia rechazada.</p>
+                            <button class="notify-third-party-btn" style="background-color: #FF9800; color: white;">🔔 Notificar a Terceros</button>
+                            <button class="add-comment-btn">💬 Añadir Comentario</button>`;
+                } else if (task.status === 'notified_third_party') {
+                     return `<div class="status-notified">
+                        <h4>🔔 Aviso a Terceros Enviado</h4>
+                        <p>"${task.notificationDetails}"</p>
+                    </div>
+                    <button class="add-comment-btn">💬 Añadir Comentario</button>`;
                 }
                  return `<p>Fotos subidas: ${evidenceCount} / 7</p>
                          <button class="add-comment-btn">💬 Añadir Comentario</button>`;
@@ -116,7 +131,6 @@ export const renderTask = (task, userRole, now) => {
                     supervisorButtons += `
                         <button class="validate-btn">👍 Validar</button>
                         <button class="reject-btn">👎 Rechazar</button>
-                        <button class="notify-third-party-btn" style="background-color: #FF9800; color: white;">🔔 Notificar a Terceros</button>
                     `;
                     break;
                 case 'counter-proposed':
