@@ -12,15 +12,15 @@ import {
     createTask,
     getUserProfile,
     getTasksForReport,
-    getAssignedTasksByDate,
-    saveDailyReport,
     getAssignedTasksForDate,
+    saveDailyReport,
     getTasksForWeeklyReport,
     deleteTask,
     getTaskById,
     addCommentToTask,
     getTasksForTimeRange,
-    getCommentsForTask
+    getCommentsForTask,
+    getSupervisorTasksByDate // NUEVO: Importa la nueva función
 } from './services/firestore.js';
 import { renderTask } from './ui/components.js';
 import { uploadImage } from './services/cloudinary.js';
@@ -167,7 +167,15 @@ const loadTasksForSelectedDate = () => {
     console.log('Cargando tareas para fecha:', selectedDate);
 
     if (currentUserProfile.role === 'supervisor') {
-        unsubscribe = getAssignedTasksByDate(currentUser.uid, selectedDate, displayTasks);
+        // MODIFICADO: Llama a la nueva función
+        const supervisedId = currentUserProfile.supervisingId;
+        if (supervisedId) {
+            unsubscribe = getSupervisorTasksByDate(currentUser.uid, supervisedId, selectedDate, displayTasks);
+        } else {
+            console.error("El supervisor no tiene un supervisado asignado.");
+            // Si no hay supervisado, solo muestra las tareas que él asignó
+            unsubscribe = getAssignedTasksByDate(currentUser.uid, selectedDate, displayTasks);
+        }
     } else {
         unsubscribe = getTasksByDate(currentUser.uid, selectedDate, displayTasks);
     }

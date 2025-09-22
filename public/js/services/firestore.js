@@ -1,5 +1,6 @@
 // ======================================================================
 // ARCHIVO ACTUALIZADO: js/services/firestore.js
+// La función `getTasksBySupervisor` obtiene todas las tareas relevantes.
 // ======================================================================
 
 import { db } from '../config/firebase-config.js';
@@ -15,14 +16,16 @@ import {
     getDoc,
     getDocs,
     deleteDoc,
-    orderBy // NUEVO: Para ordenar comentarios
+    orderBy,
+    or,
+    and // NUEVO: Para combinar todas las cláusulas where
 } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
 // --- REFERENCIAS A COLECCIONES ---
 const tasksCollection = collection(db, 'tasks');
 const usersCollection = collection(db, 'users');
 const reportsCollection = collection(db, 'dailyReports');
-const commentsCollection = collection(db, 'taskComments'); // NUEVO: Colección de comentarios
+const commentsCollection = collection(db, 'taskComments');
 
 // --- FUNCIONES AUXILIARES PARA FECHAS ---
 
@@ -317,6 +320,40 @@ export const getTasksByDate = (userId, selectedDate, callback) => {
  */
 export const getTasks = (userId, callback) => {
     const q = query(tasksCollection, where("assignedToId", "==", userId));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const tasks = [];
+        snapshot.forEach(doc => {
+            tasks.push({ id: doc.id, ...doc.data() });
+        });
+        callback(tasks);
+    });
+    return unsubscribe;
+};
+
+/**
+ * NUEVO: Obtiene las tareas de un supervisor y su supervisado para una fecha específica (tiempo real).
+ * @param {string} supervisorId - El ID del supervisor.
+ * @param {string} supervisedId - El ID del supervisado.
+ * @param {Date} selectedDate - La fecha seleccionada.
+ * @param {function} callback - Función que se ejecuta cuando hay cambios.
+ * @returns {function} - Función para cancelar la suscripción.
+ */
+export const getSupervisorTasksByDate = (supervisorId, supervisedId, selectedDate, callback) => {
+    const { startOfDay, endOfDay } = getDayLimits(selectedDate);
+
+    const q = query(
+        tasksCollection,
+        // CORRECCIÓN: Usar `and` para combinar todos los filtros
+        and(
+            or(
+                where("assignerId", "==", supervisorId),
+                where("assignedToId", "==", supervisedId)
+            ),
+            where("deadline", ">=", startOfDay),
+            where("deadline", "<=", endOfDay)
+        )
+    );
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
         const tasks = [];
         snapshot.forEach(doc => {

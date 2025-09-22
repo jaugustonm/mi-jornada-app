@@ -1,36 +1,36 @@
 /* ======================================================================
    ARCHIVO COMPLETO Y ACTUALIZADO: css/style.css
-   Nueva paleta de colores, fuentes modernas y diseño corregido.
+   Nueva paleta de colores elegantes y profesionales.
    ====================================================================== */
 
 /* --- Variables de Colores y Fuentes --- */
 :root {
-    --primary-color: #34495e; /* Gris oscuro elegante */
-    --secondary-color: #5d6d7e; /* Gris azulado suave */
-    --accent-color: #8e44ad; /* Púrpura vibrante */
-    --background-color: #f5f6fa; /* Gris muy claro */
+    --primary-color: #1d3557; /* Azul marino profundo */
+    --secondary-color: #457b9d; /* Azul grisáceo */
+    --accent-color: #e63946; /* Rojo vibrante */
+    --background-color: #f1faee; /* Beige muy claro */
     --card-bg: #ffffff;
-    --text-color: #2c3e50;
-    --border-color: #dfe4ea;
+    --text-color: #34495e;
+    --border-color: #e0e0e0;
     --light-gray: #f9f9fb;
-    --completed-color: #27ae60; /* Verde esmeralda */
-    --penalty-color: #c0392b; /* Rojo para penalidad */
+    --completed-color: #2ecc71; /* Verde esmeralda */
+    --penalty-color: #e74c3c; /* Rojo para penalidad */
     --font-main: 'Poppins', sans-serif;
     --font-title: 'Montserrat', sans-serif;
 }
 
 /* Modo Oscuro */
 body.dark-mode {
-    --primary-color: #bb86fc;
-    --secondary-color: #03dac6;
-    --accent-color: #ff007f;
+    --primary-color: #a8dadc;
+    --secondary-color: #f1faee;
+    --accent-color: #e63946;
     --background-color: #121212;
     --card-bg: #1f1f1f;
     --text-color: #e0e0e0;
     --border-color: #333333;
     --light-gray: #292929;
-    --completed-color: #018786;
-    --penalty-color: #cf6679;
+    --completed-color: #03dac6;
+    --penalty-color: #e74c3c;
 }
 
 /* --- Estilos Generales --- */
@@ -253,6 +253,12 @@ main {
 .task-card.task-completed h3,
 .task-card.task-completed p {
     color: white;
+}
+
+.task-card.task-completed .task-actions button,
+.task-card.task-completed .task-comments-container,
+.task-card.task-completed .negotiation-display {
+    border-color: rgba(255, 255, 255, 0.3);
 }
 
 .task-card.task-completed h3 {
@@ -529,4 +535,5 @@ main {
 
 .modal button[type="submit"]:hover {
     background-color: #3f3183;
+}
 }
