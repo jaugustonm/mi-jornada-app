@@ -1034,24 +1034,40 @@ document.addEventListener('DOMContentLoaded', () => {
         const taskData = taskDoc.data();
         const proposalCounts = taskData.proposalCounts || { supervisor: 0, supervised: 0 };
 
+        // ===============================================================
+        // INICIO DE LA CORRECCIÓN PARA VALIDAR Y RECHAZAR TAREAS
+        // ===============================================================
         if (e.target.classList.contains('validate-btn')) {
-            await updateDocument('tasks', taskId, { status: 'validated' });
-        } else if (e.target.classList.contains('reject-btn')) {
-            // --- CORRECCIÓN MEJORADA ---
-            if (taskData.taskType === 'weekly-penalty') {
-                await updateDocument('tasks', taskId, { status: 'rejected' });
-                alert("Evidencia rechazada. Ahora puedes notificar a un tercero.");
-            } else {
-                const isConfirmed = confirm("¿Estás seguro de que quieres rechazar esta evidencia? La tarea volverá al estado 'pendiente' para que se pueda subir una nueva evidencia.");
-                if (isConfirmed) {
-                    await updateDocument('tasks', taskId, {
-                        status: 'pending',
-                        evidence: null // Borra la evidencia anterior para forzar una nueva subida
-                    });
-                    alert("Evidencia rechazada. El supervisado deberá subir una nueva.");
-                }
+            try {
+                await updateDocument('tasks', taskId, { status: 'validated' });
+                // No se necesita un 'alert' aquí, la UI se actualizará automáticamente
+                // gracias a onSnapshot, mostrando que la tarea fue validada.
+            } catch (error) {
+                console.error("Error al validar la tarea:", error);
+                alert("Hubo un error al intentar validar la tarea. Por favor, revisa la consola.");
             }
-            // --- FIN DE LA CORRECCIÓN ---
+        } else if (e.target.classList.contains('reject-btn')) {
+            try {
+                if (taskData.taskType === 'weekly-penalty') {
+                    await updateDocument('tasks', taskId, { status: 'rejected' });
+                    alert("Evidencia rechazada. Ahora puedes notificar a un tercero.");
+                } else {
+                    const isConfirmed = confirm("¿Estás seguro de que quieres rechazar esta evidencia? La tarea volverá al estado 'pendiente' para que se pueda subir una nueva evidencia.");
+                    if (isConfirmed) {
+                        await updateDocument('tasks', taskId, {
+                            status: 'pending',
+                            evidence: null // Borra la evidencia anterior para forzar una nueva subida
+                        });
+                        alert("Evidencia rechazada. El supervisado deberá subir una nueva.");
+                    }
+                }
+            } catch (error) {
+                console.error("Error al rechazar la tarea:", error);
+                alert("Hubo un error al intentar rechazar la tarea. Por favor, revisa la consola.");
+            }
+        // ===============================================================
+        // FIN DE LA CORRECCIÓN
+        // ===============================================================
         } else if (e.target.classList.contains('evidence-btn')) {
             currentTaskId = taskId;
             openCamera();
