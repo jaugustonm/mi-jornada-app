@@ -1,3 +1,7 @@
+// Importamos los scripts de Firebase necesarios para el Service Worker.
+importScripts('https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js');
+importScripts('https://www.gstatic.com/firebasejs/9.15.0/firebase-messaging-sw.js');
+
 const CACHE_NAME = 'mi-jornada-app-cache-v1';
 const urlsToCache = [
   '/',
@@ -11,7 +15,7 @@ const urlsToCache = [
   '/js/services/cloudinary.js',
   '/js/services/time.js',
   '/js/ui/components.js',
-  '/icon.svg', // <-- Ícono de reloj añadido a la caché
+  '/icon.svg',
   'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap',
   'https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js',
   'https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js',

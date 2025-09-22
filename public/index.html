@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Jornada Divertida</title>
 
-    <link rel="icon" href="data:,">
+    <link rel="icon" href="icon.svg">
 
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1d3557">
 
     <link rel="stylesheet" href="css/style.css">
@@ -223,6 +223,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-messaging-compat.js"></script>
     <script type="module" src="js/main.js"></script>
     <script>
         const darkModeToggle = document.getElementById('dark-mode-toggle');
@@ -241,7 +242,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').then(registration => {
+                navigator.serviceWorker.register('sw.js').then(registration => {
                     console.log('ServiceWorker registrado con éxito:', registration.scope);
                 }).catch(error => {
                     console.log('Fallo en el registro de ServiceWorker:', error);
