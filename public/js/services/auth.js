@@ -2,7 +2,7 @@ import {
     signInWithEmailAndPassword,
     onAuthStateChanged,
     signOut,
-    createUserWithEmailAndPassword
+    sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
 import { auth } from '../config/firebase-config.js';
 
@@ -18,6 +18,6 @@ export const onAuthState = (callback) => {
     return onAuthStateChanged(auth, callback);
 };
 
-export const register = (email, password) => {
-    return createUserWithEmailAndPassword(auth, email, password);
+export const sendPasswordReset = (email) => {
+    return sendPasswordResetEmail(auth, email);
 };

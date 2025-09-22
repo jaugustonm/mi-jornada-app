@@ -5,7 +5,7 @@
 // ======================================================================
 
 // --- IMPORTACIONES ---
-import { onAuthState, login, logout, register } from './services/auth.js';
+import { onAuthState, login, logout, sendPasswordReset } from './services/auth.js';
 import {
     getTasksByDate,
     updateDocument,
@@ -31,7 +31,6 @@ import { getSecureTime } from './services/time.js';
 const authView = document.getElementById('auth-view');
 const appView = document.getElementById('app-view');
 const loginForm = document.getElementById('login-form');
-const registerForm = document.getElementById('register-form');
 const logoutButton = document.getElementById('logout-button');
 const userInfo = document.getElementById('user-info');
 const userEmail = document.getElementById('user-email');
@@ -61,7 +60,6 @@ const rewardForm = document.getElementById('reward-form');
 const generateMorningReportButton = document.getElementById('generate-morning-report-button');
 const generateAfternoonReportButton = document.getElementById('generate-afternoon-report-button');
 
-
 // ELEMENTOS PARA LA PENALIDAD
 const penaltyActions = document.getElementById('penalty-actions');
 const penaltyForm = document.getElementById('penalty-form');
@@ -90,6 +88,11 @@ const proposeNewPenaltyBtn = document.getElementById('propose-new-penalty-btn');
 const aiAssistanceModal = document.getElementById('ai-assistance-modal');
 const aiPromptContainer = document.getElementById('ai-prompt-container');
 const finalPenaltyForm = document.getElementById('final-penalty-form');
+
+// ELEMENTOS PARA RESTABLECER CONTRASEÑA
+const forgotPasswordLink = document.getElementById('forgot-password-link');
+const forgotPasswordModal = document.getElementById('forgot-password-modal');
+const forgotPasswordForm = document.getElementById('forgot-password-form');
 
 
 // --- VARIABLES GLOBALES ---
@@ -824,28 +827,19 @@ const handleLogin = async (e) => {
     }
 };
 
-/**
- * Maneja el registro de usuarios
- */
-const handleRegister = async (e) => {
+const handleForgotPassword = async (e) => {
     e.preventDefault();
-    const email = document.getElementById('register-email').value;
-    const password = document.getElementById('register-password').value;
-    const role = document.getElementById('register-role').value;
-
+    const email = document.getElementById('forgot-password-email').value;
     try {
-        const userCredential = await register(email, password);
-        const user = userCredential.user;
-        await createUserProfile(user.uid, {
-            email: user.email,
-            role: role,
-            createdAt: new Date()
-        });
+        await sendPasswordReset(email);
+        alert('Se ha enviado un enlace para restablecer la contraseña a tu correo electrónico.');
+        forgotPasswordModal.classList.add('hidden');
     } catch (error) {
-        console.error("Error en registro:", error);
-        alert("Error al registrarse: " + error.message);
+        console.error("Error al enviar el correo de restablecimiento:", error);
+        alert("Error al enviar el correo de restablecimiento: " + error.message);
     }
 };
+
 
 // --- EVENT LISTENERS ---
 
@@ -853,13 +847,14 @@ document.addEventListener('DOMContentLoaded', () => {
     updateSelectedDateDisplay();
 
     loginForm.addEventListener('submit', handleLogin);
-    registerForm.addEventListener('submit', handleRegister);
     logoutButton.addEventListener('click', logout);
     addTaskForm.addEventListener('submit', handleTaskCreation);
     penaltyForm.addEventListener('submit', handlePenaltySuggestion);
     negotiationForm.addEventListener('submit', handleNegotiation);
     rewardForm.addEventListener('submit', handleRewardAssignment);
     finalPenaltyForm.addEventListener('submit', handleFinalPenalty);
+    forgotPasswordForm.addEventListener('submit', handleForgotPassword);
+
     commentForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const commentText = document.getElementById('comment-text').value;
@@ -899,6 +894,11 @@ document.addEventListener('DOMContentLoaded', () => {
     assignRewardButton.addEventListener('click', () => rewardModal.classList.remove('hidden'));
     generateWeeklyReportButton.addEventListener('click', generateWeeklyReport);
     closeWeeklyReportButton.addEventListener('click', () => weeklyReportModal.classList.add('hidden'));
+
+    forgotPasswordLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        forgotPasswordModal.classList.remove('hidden');
+    });
 
     document.addEventListener('click', (e) => {
         if (e.target.classList.contains('modal')) {
@@ -1019,23 +1019,6 @@ document.addEventListener('DOMContentLoaded', () => {
         supervisorRejectionModal.classList.add('hidden');
         negotiationModal.classList.remove('hidden');
     });
-
-    const loginCard = document.getElementById('login-card');
-    const registerCard = document.getElementById('register-card');
-    const showRegister = document.getElementById('show-register');
-    const showLogin = document.getElementById('show-login');
-
-    showRegister.addEventListener('click', (e) => {
-        e.preventDefault();
-        loginCard.classList.add('hidden');
-        registerCard.classList.remove('hidden');
-    });
-
-    showLogin.addEventListener('click', (e) => {
-        e.preventDefault();
-        registerCard.classList.add('hidden');
-        loginCard.classList.remove('hidden');
-    });
 });
 
 // --- OBSERVADOR DE AUTENTICACIÓN ---
@@ -1055,8 +1038,6 @@ onAuthState(async (user) => {
             console.log('Usuario autenticado:', user.email, 'Rol:', currentUserProfile.role);
         } else {
             console.error('No se pudo cargar el perfil del usuario');
-            // Esto puede ocurrir brevemente después del registro, antes de que el perfil se cree.
-            // Podríamos esperar un poco y reintentar, o simplemente dejar que la siguiente pantalla se encargue.
         }
     } else {
         currentUser = null;
