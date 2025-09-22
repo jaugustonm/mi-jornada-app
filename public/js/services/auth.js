@@ -1,7 +1,8 @@
 import {
     signInWithEmailAndPassword,
     onAuthStateChanged,
-    signOut
+    signOut,
+    createUserWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
 import { auth } from '../config/firebase-config.js';
 
@@ -15,4 +16,8 @@ export const logout = () => {
 
 export const onAuthState = (callback) => {
     return onAuthStateChanged(auth, callback);
+};
+
+export const register = (email, password) => {
+    return createUserWithEmailAndPassword(auth, email, password);
 };

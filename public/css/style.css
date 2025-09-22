@@ -482,7 +482,7 @@ main {
 }
 
 /* --- Estilos para los Formularios (General) --- */
-#login-form {
+#login-form, #register-form {
     text-align: center; 
 }
 
@@ -494,8 +494,11 @@ main {
 .modal input[type="text"],
 .modal textarea,
 .modal input[type="datetime-local"],
-#login-form input[type="email"], /* Selecciona el input de email del formulario de login */
-#login-form input[type="password"] { /* Selecciona el input de password del formulario de login */
+#login-form input[type="email"],
+#login-form input[type="password"],
+#register-form input[type="email"],
+#register-form input[type="password"],
+#register-form select {
     width: 100%;
     padding: 12px;
     border: 1px solid var(--border-color);
@@ -505,7 +508,7 @@ main {
     color: var(--text-color);
     transition: border-color 0.3s, box-shadow 0.3s;
     box-sizing: border-box; 
-    text-align: left; /* Alinea el texto a la izquierda en los inputs del login */
+    text-align: left;
 }
 
 .modal input:focus,
@@ -535,5 +538,4 @@ main {
 
 .modal button[type="submit"]:hover {
     background-color: #3f3183;
-}
 }

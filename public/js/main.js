@@ -5,7 +5,7 @@
 // ======================================================================
 
 // --- IMPORTACIONES ---
-import { onAuthState, login, logout } from './services/auth.js';
+import { onAuthState, login, logout, register } from './services/auth.js';
 import {
     getTasksByDate,
     updateDocument,
@@ -20,7 +20,8 @@ import {
     addCommentToTask,
     getTasksForTimeRange,
     getCommentsForTask,
-    getSupervisorTasksByDate // NUEVO: Importa la nueva función
+    getSupervisorTasksByDate,
+    createUserProfile
 } from './services/firestore.js';
 import { renderTask } from './ui/components.js';
 import { uploadImage } from './services/cloudinary.js';
@@ -30,6 +31,7 @@ import { getSecureTime } from './services/time.js';
 const authView = document.getElementById('auth-view');
 const appView = document.getElementById('app-view');
 const loginForm = document.getElementById('login-form');
+const registerForm = document.getElementById('register-form');
 const logoutButton = document.getElementById('logout-button');
 const userInfo = document.getElementById('user-info');
 const userEmail = document.getElementById('user-email');
@@ -167,13 +169,11 @@ const loadTasksForSelectedDate = () => {
     console.log('Cargando tareas para fecha:', selectedDate);
 
     if (currentUserProfile.role === 'supervisor') {
-        // MODIFICADO: Llama a la nueva función
         const supervisedId = currentUserProfile.supervisingId;
         if (supervisedId) {
             unsubscribe = getSupervisorTasksByDate(currentUser.uid, supervisedId, selectedDate, displayTasks);
         } else {
             console.error("El supervisor no tiene un supervisado asignado.");
-            // Si no hay supervisado, solo muestra las tareas que él asignó
             unsubscribe = getAssignedTasksByDate(currentUser.uid, selectedDate, displayTasks);
         }
     } else {
@@ -187,7 +187,6 @@ const loadTasksForSelectedDate = () => {
  * Muestra las tareas en los contenedores correspondientes, agrupadas por estado.
  */
 const displayTasks = async (tasks) => {
-    // Definimos los contenedores y los mensajes por defecto
     const containers = {
         'penalties-list': { element: document.getElementById('penalties-list'), content: [], emptyMessage: `<div class="task-card empty-message" style="text-align: center; color: #666; font-style: italic;">No hay penalidades asignadas para este día.</div>` },
         'morning-tasks-pending': { element: document.getElementById('morning-tasks-pending'), content: [], emptyMessage: `<div class="task-card empty-message" style="text-align: center; color: #666; font-style: italic;">No hay tareas pendientes para la mañana.</div>` },
@@ -196,14 +195,12 @@ const displayTasks = async (tasks) => {
         'afternoon-tasks-completed': { element: document.getElementById('afternoon-tasks-completed'), content: [], emptyMessage: `<div class="task-card empty-message" style="text-align: center; color: #666; font-style: italic;">No hay tareas completadas en la tarde.</div>` }
     };
 
-    // Limpia todos los contenedores antes de rellenarlos
     for (const key in containers) {
         containers[key].element.innerHTML = '';
     }
 
     if (!currentUserProfile) return;
-    
-    // Ordena las tareas
+
     tasks.sort((a, b) => {
         if (a.taskType === 'weekly-penalty' && b.taskType !== 'weekly-penalty') return -1;
         if (a.taskType !== 'weekly-penalty' && b.taskType === 'weekly-penalty') return 1;
@@ -212,7 +209,6 @@ const displayTasks = async (tasks) => {
 
     const now = await getSecureTime();
 
-    // Distribuye las tareas en las listas correctas
     tasks.forEach(task => {
         const taskHTML = renderTask(task, currentUserProfile.role, now);
 
@@ -221,7 +217,7 @@ const displayTasks = async (tasks) => {
         } else {
             const deadlineHour = task.deadline?.toDate().getHours() || 12;
             const isCompleted = task.status === 'completed' || task.status === 'validated';
-            
+
             if (deadlineHour < 14) {
                 if (isCompleted) {
                     containers['morning-tasks-completed'].content.push(taskHTML);
@@ -238,7 +234,6 @@ const displayTasks = async (tasks) => {
         }
     });
 
-    // Rellena los contenedores con el contenido o el mensaje de vacío
     for (const key in containers) {
         containers[key].element.innerHTML = containers[key].content.length > 0 ? containers[key].content.join('') : containers[key].emptyMessage;
     }
@@ -353,7 +348,7 @@ const assignWeeklyPenalty = async (currentDate) => {
     }
 
     const dayOfWeek = currentDate.getDay(); // 0 (Sun) to 6 (Sat)
-    
+
     const saturday = new Date(currentDate);
     saturday.setDate(currentDate.getDate() + (6 - dayOfWeek));
     saturday.setHours(0, 0, 0, 0);
@@ -402,7 +397,6 @@ const generateJornadaReport = async (jornada) => {
         endTime = new Date(selectedDate);
         endTime.setHours(12, 0, 0, 0);
         reportTitle = "Reporte de Jornada - Mañana";
-        // CORRECCIÓN: Compara el objeto de la hora completa, no solo la hora.
         isDefinitive = now >= endTime;
     } else {
         startTime = new Date(selectedDate);
@@ -410,13 +404,12 @@ const generateJornadaReport = async (jornada) => {
         endTime = new Date(selectedDate);
         endTime.setHours(17, 0, 0, 0);
         reportTitle = "Reporte de Jornada - Tarde";
-        // CORRECCIÓN: Aplica la misma lógica para el reporte de la tarde.
         isDefinitive = now >= endTime;
     }
 
     try {
         const tasks = await getTasksForTimeRange(currentUser.uid, startTime, endTime, currentUserProfile.role === 'supervisor');
-        
+
         if (isDefinitive && currentUserProfile.role === 'supervisor') {
             const uncompletedPenalty = tasks.find(task => 
                 task.taskType === 'penalty' && 
@@ -491,7 +484,7 @@ const generateReport = async () => {
 
         const percentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
         const canReceiveReward = unfulfilledMandatory.length === 0 && percentage >= 80;
-        
+
         reportModalTitle.textContent = "Reporte de Cumplimiento Diario";
 
         let reportHTML = `
@@ -633,11 +626,10 @@ const handleRewardAssignment = async (e) => {
 const handlePenaltySuggestion = async (e) => {
     e.preventDefault();
 
-    // NUEVO: Verificación del límite de 3 penalidades por día
     try {
         const assignedTasks = await getAssignedTasksForDate(currentUser.uid, selectedDate);
         const penaltiesCount = assignedTasks.filter(task => task.taskType === 'penalty' || task.taskType === 'weekly-penalty').length;
-        
+
         if (penaltiesCount >= 3) {
             alert("No se pueden imponer más de 3 penalidades por día.");
             return;
@@ -832,12 +824,36 @@ const handleLogin = async (e) => {
     }
 };
 
+/**
+ * Maneja el registro de usuarios
+ */
+const handleRegister = async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('register-email').value;
+    const password = document.getElementById('register-password').value;
+    const role = document.getElementById('register-role').value;
+
+    try {
+        const userCredential = await register(email, password);
+        const user = userCredential.user;
+        await createUserProfile(user.uid, {
+            email: user.email,
+            role: role,
+            createdAt: new Date()
+        });
+    } catch (error) {
+        console.error("Error en registro:", error);
+        alert("Error al registrarse: " + error.message);
+    }
+};
+
 // --- EVENT LISTENERS ---
 
 document.addEventListener('DOMContentLoaded', () => {
     updateSelectedDateDisplay();
 
     loginForm.addEventListener('submit', handleLogin);
+    registerForm.addEventListener('submit', handleRegister);
     logoutButton.addEventListener('click', logout);
     addTaskForm.addEventListener('submit', handleTaskCreation);
     penaltyForm.addEventListener('submit', handlePenaltySuggestion);
@@ -1003,6 +1019,23 @@ document.addEventListener('DOMContentLoaded', () => {
         supervisorRejectionModal.classList.add('hidden');
         negotiationModal.classList.remove('hidden');
     });
+
+    const loginCard = document.getElementById('login-card');
+    const registerCard = document.getElementById('register-card');
+    const showRegister = document.getElementById('show-register');
+    const showLogin = document.getElementById('show-login');
+
+    showRegister.addEventListener('click', (e) => {
+        e.preventDefault();
+        loginCard.classList.add('hidden');
+        registerCard.classList.remove('hidden');
+    });
+
+    showLogin.addEventListener('click', (e) => {
+        e.preventDefault();
+        registerCard.classList.add('hidden');
+        loginCard.classList.remove('hidden');
+    });
 });
 
 // --- OBSERVADOR DE AUTENTICACIÓN ---
@@ -1022,8 +1055,8 @@ onAuthState(async (user) => {
             console.log('Usuario autenticado:', user.email, 'Rol:', currentUserProfile.role);
         } else {
             console.error('No se pudo cargar el perfil del usuario');
-            alert('Error al cargar el perfil del usuario');
-            logout();
+            // Esto puede ocurrir brevemente después del registro, antes de que el perfil se cree.
+            // Podríamos esperar un poco y reintentar, o simplemente dejar que la siguiente pantalla se encargue.
         }
     } else {
         currentUser = null;

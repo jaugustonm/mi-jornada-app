@@ -18,7 +18,8 @@ import {
     deleteDoc,
     orderBy,
     or,
-    and // NUEVO: Para combinar todas las cláusulas where
+    and, // NUEVO: Para combinar todas las cláusulas where
+    setDoc
 } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
 // --- REFERENCIAS A COLECCIONES ---
@@ -411,4 +412,15 @@ export const getUserProfile = async (userId) => {
         console.error("No se encontró el perfil del usuario.");
         return null;
     }
+};
+
+/**
+ * Crea el perfil de un usuario.
+ * @param {string} userId - El ID del usuario.
+ * @param {object} profileData - Los datos del perfil del usuario.
+ * @returns {Promise}
+ */
+export const createUserProfile = (userId, profileData) => {
+    const userDocRef = doc(db, 'users', userId);
+    return setDoc(userDocRef, profileData);
 };
