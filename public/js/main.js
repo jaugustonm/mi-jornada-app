@@ -475,10 +475,11 @@ const generateJornadaReport = async (jornada) => {
         const tasks = await getTasksForTimeRange(currentUser.uid, startTime, endTime, currentUserProfile.role === 'supervisor');
 
         if (isDefinitive && currentUserProfile.role === 'supervisor') {
-            const uncompletedPenalty = tasks.find(task => 
-                task.taskType === 'penalty' && 
-                task.status !== 'completed' && 
-                task.status !== 'validated'
+            const uncompletedPenalty = tasks.find(task =>
+                task.taskType === 'penalty' &&
+                task.status !== 'completed' &&
+                task.status !== 'validated' &&
+                now > task.deadline.toDate()
             );
 
             if (uncompletedPenalty) {
@@ -890,7 +891,7 @@ const handleTaskCreation = async (e) => {
     }
     const taskData = {
         title, description, deadline: new Date(deadline), isMandatory,
-        assignerId: currentUser.uid, assignedToId: assignedToId, 
+        assignerId: currentUser.uid, assignedToId: assignedToId,
         status: currentUserProfile.role === 'supervisor' ? 'pending_acceptance' : 'pending',
         taskType: 'regular'
     };
@@ -1144,7 +1145,7 @@ onAuthState(async (user) => {
             if (currentUserProfile.role === 'supervisor') {
                 requestNotificationPermission();
             }
-            
+
             // Escucha mensajes de notificación mientras la app está activa
             onMessage(messaging, (payload) => {
                 console.log('Mensaje recibido en primer plano: ', payload);
