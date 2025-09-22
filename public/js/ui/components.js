@@ -29,6 +29,8 @@ export const renderTask = (task, userRole, now) => {
         } else if (task.status === 'negotiation_locked') {
             specialStatusBadge = '<span class="penalty-badge" style="background-color: #607D8B;">Decisión Final</span>';
         }
+    } else if (task.taskType === 'weekly-penalty') {
+        specialStatusBadge = '<span class="penalty-badge" style="background-color: #8E44AD;">Penalidad Semanal</span>';
     } else if (task.status === 'pending_acceptance') {
         specialStatusBadge = '<span class="penalty-badge" style="background-color: #2196F3;">Pendiente de Aceptación</span>';
     }
@@ -36,6 +38,27 @@ export const renderTask = (task, userRole, now) => {
     const proposalCounts = task.proposalCounts || { supervisor: 0, supervised: 0 };
 
     const getActionButtons = () => {
+        // --- NUEVO: Lógica para la penalidad semanal ---
+        if (task.taskType === 'weekly-penalty') {
+            const evidenceCount = task.evidence?.length || 0;
+            if (userRole === 'supervisado') {
+                if (task.status === 'pending') {
+                    return `<p>Fotos subidas: ${evidenceCount} / 7</p>
+                            <button class="evidence-btn">📸 Subir Foto</button>
+                            <button class="add-comment-btn">💬 Añadir Comentario</button>`;
+                }
+            } else if (userRole === 'supervisor') {
+                 if (task.status === 'completed') {
+                    return `<p>Fotos subidas: ${evidenceCount} / 7</p>
+                            <button class="validate-btn">👍 Validar</button>
+                            <button class="reject-btn">👎 Rechazar</button>
+                            <button class="add-comment-btn">💬 Añadir Comentario</button>`;
+                }
+                 return `<p>Fotos subidas: ${evidenceCount} / 7</p>
+                         <button class="add-comment-btn">💬 Añadir Comentario</button>`;
+            }
+        }
+        
         if (userRole === 'supervisado') {
             let supervisedButtons = `<button class="add-comment-btn">💬 Añadir Comentario</button>`;
             switch (task.status) {
@@ -66,7 +89,7 @@ export const renderTask = (task, userRole, now) => {
                 case 'pending':
                 case 'accepted':
                 case 'final_penalty':
-                    if (isPastDeadline) {
+                    if (deadline && isPastDeadline) {
                         supervisedButtons += `<p class="status-expired">El tiempo para completar esta tarea ha expirado.</p>`;
                     } else {
                         supervisedButtons += `<button class="evidence-btn">📸 Subir Evidencia para Completar</button>`;
@@ -83,17 +106,12 @@ export const renderTask = (task, userRole, now) => {
         }
 
         if (userRole === 'supervisor') {
-            // --- MODIFICADO ---
-            // El supervisor siempre puede comentar.
             let supervisorButtons = `<button class="add-comment-btn">💬 Añadir Comentario</button>`;
-
-            // Si la tarea expiró, se añade el mensaje y no se muestran más botones de acción.
-            if (isPastDeadline && task.status !== 'completed' && task.status !== 'validated') {
+            if (deadline && isPastDeadline && task.status !== 'completed' && task.status !== 'validated') {
                 supervisorButtons += `<p class="status-expired">El tiempo para completar esta tarea ha expirado.</p>`;
                 return supervisorButtons;
             }
             
-            // Si no ha expirado, se añaden los botones correspondientes al estado.
             switch (task.status) {
                 case 'completed':
                     supervisorButtons += `
@@ -137,18 +155,11 @@ export const renderTask = (task, userRole, now) => {
             return `<p class="status-validated">Tarea Validada ✔️</p>`;
         }
         
-        if (userRole === 'supervisado' && task.status !== 'completed' && task.status !== 'validated') {
-             if (isPastDeadline) {
-                 return `<p class="status-expired">El tiempo para completar esta tarea ha expirado.</p>`;
-             }
-             return `<button class="evidence-btn">📸 Subir Evidencia</button>`;
-        }
-
         return '';
     };
 
     let taskContentHTML;
-    const deadlineHTML = `<p><strong>Hora Límite:</strong> <span class="${isPastDeadline ? 'status-expired' : ''}">${deadlineTime}</span></p>`;
+    const deadlineHTML = deadline ? `<p><strong>Hora Límite:</strong> <span class="${isPastDeadline ? 'status-expired' : ''}">${deadlineTime}</span></p>` : '';
 
     if (task.status === 'counter-proposed' && task.counterProposal) {
         taskContentHTML = `
@@ -168,12 +179,24 @@ export const renderTask = (task, userRole, now) => {
             </div>
         `;
     } else {
-        const titlePrefix = task.taskType === 'penalty' ? 'Penalidad' : 'Tarea';
+        const titlePrefix = task.taskType === 'penalty' ? 'Penalidad' : (task.taskType === 'weekly-penalty' ? `Penalidad Semanal (${task.day === 'saturday' ? 'Sábado' : 'Domingo'})` : 'Tarea');
         taskContentHTML = `
             <h3>${titlePrefix}: ${task.title} ${isMandatory} ${specialStatusBadge}</h3>
-            ${deadlineHTML}
+            ${task.taskType !== 'weekly-penalty' ? deadlineHTML : ''}
             <p>${task.description}</p>
         `;
+    }
+    
+    // Muestra las evidencias de la penalidad semanal
+    let evidenceHTML = '';
+    if (task.taskType === 'weekly-penalty' && task.evidence && task.evidence.length > 0) {
+        evidenceHTML += '<h4>Evidencias:</h4><div class="evidence-gallery">';
+        task.evidence.forEach(ev => {
+            evidenceHTML += `<a href="${ev.url}" target="_blank"><img src="${ev.url}" width="50" alt="evidencia"></a>`;
+        });
+        evidenceHTML += '</div>';
+    } else if (task.evidence?.url) {
+        evidenceHTML = `<a href="${task.evidence.url}" target="_blank">Ver evidencia</a>`;
     }
 
     return `
@@ -182,9 +205,8 @@ export const renderTask = (task, userRole, now) => {
             <div class="task-actions">
                 ${getActionButtons()}
             </div>
-            <div class="task-comments-container">
-                </div>
-            ${task.evidence?.url ? `<a href="${task.evidence.url}" target="_blank">Ver evidencia</a>` : ''}
+            <div class="task-comments-container"></div>
+            ${evidenceHTML}
         </div>
     `;
 };

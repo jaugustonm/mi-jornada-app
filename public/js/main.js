@@ -190,8 +190,14 @@ const displayTasks = async (tasks) => {
     });
 
     if (!currentUserProfile) return;
+    
+    tasks.sort((a, b) => {
+        if (a.taskType === 'weekly-penalty' && b.taskType !== 'weekly-penalty') return -1;
+        if (a.taskType !== 'weekly-penalty' && b.taskType === 'weekly-penalty') return 1;
+        return (a.deadline?.toDate() || 0) - (b.deadline?.toDate() || 0);
+    });
 
-    const penalties = tasks.filter(task => task.taskType === 'penalty');
+    const penalties = tasks.filter(task => task.taskType === 'penalty' || task.taskType === 'weekly-penalty');
     const regularTasks = tasks.filter(task => task.taskType !== 'penalty' && task.taskType !== 'weekly-penalty');
 
     if (tasks.length === 0) {
@@ -203,8 +209,6 @@ const displayTasks = async (tasks) => {
         document.getElementById('morning-tasks-pending').innerHTML = noTasksMessage;
         return;
     }
-    
-    tasks.sort((a, b) => (a.deadline?.toDate() || 0) - (b.deadline?.toDate() || 0));
     
     const now = await getSecureTime();
 
@@ -260,6 +264,7 @@ const displayTasks = async (tasks) => {
     });
 };
 
+
 /**
  * Abre la cámara para tomar fotos
  */
@@ -312,10 +317,23 @@ const uploadEvidence = async () => {
         const imageUrl = await uploadImage(blob);
 
         if (imageUrl && currentTaskId) {
-            await updateDocument('tasks', currentTaskId, {
-                evidence: { url: imageUrl, uploadedAt: new Date() },
-                status: 'completed'
-            });
+            const taskDoc = await getTaskById(currentTaskId);
+            if (!taskDoc.exists()) return;
+            const taskData = taskDoc.data();
+
+            if (taskData.taskType === 'weekly-penalty') {
+                const evidence = taskData.evidence || [];
+                evidence.push({ url: imageUrl, uploadedAt: new Date() });
+                await updateDocument('tasks', currentTaskId, { evidence });
+                if (evidence.length >= 7) {
+                    await updateDocument('tasks', currentTaskId, { status: 'completed' });
+                }
+            } else {
+                await updateDocument('tasks', currentTaskId, {
+                    evidence: { url: imageUrl, uploadedAt: new Date() },
+                    status: 'completed'
+                });
+            }
 
             alert("Evidencia subida exitosamente");
             closeCamera();
@@ -328,39 +346,45 @@ const uploadEvidence = async () => {
 
 /**
  * Asigna la penalidad semanal automáticamente si una penalidad diaria no se cumple.
+ * @param {Date} currentDate - La fecha segura actual para basar los cálculos.
  */
-const assignWeeklyPenalty = async () => {
+const assignWeeklyPenalty = async (currentDate) => {
     if (!currentUser || !currentUserProfile || !currentUserProfile.supervisingId) {
         console.error("No se puede asignar la penalidad: falta información del usuario o del supervisado.");
         return;
     }
 
-    const penaltyData = {
-        title: "Penalidad Semanal Automática",
-        description: "El usuario deberá realizar todas las labores del hogar durante sábado y domingo, sin que nadie más las asuma en su lugar. El cumplimiento o incumplimiento afectará a todos, recordando que la negligencia siempre pesa sobre otros.",
-        deadline: new Date(),
+    const dayOfWeek = currentDate.getDay(); // 0 (Sun) to 6 (Sat)
+    
+    const saturday = new Date(currentDate);
+    saturday.setDate(currentDate.getDate() + (6 - dayOfWeek));
+    saturday.setHours(0, 0, 0, 0);
+
+    const sunday = new Date(saturday);
+    sunday.setDate(saturday.getDate() + 1);
+    sunday.setHours(0, 0, 0, 0);
+
+    const basePenaltyData = {
+        title: "Penalidad Semanal Impuesta",
+        description: "Realizar todas las labores del hogar. Debe subir al menos 7 fotos como evidencia cada día (sábado y domingo).",
         isMandatory: true,
         assignerId: currentUser.uid,
         assignedToId: currentUserProfile.supervisingId,
-        status: 'pending_acceptance',
-        taskType: 'penalty',
-        negotiationHistory: [{
-            proposer: 'system',
-            title: "Penalidad Semanal Automática",
-            description: "Asignada por incumplimiento de una penalidad de jornada.",
-            date: new Date(),
-        }],
-        proposalCounts: { supervisor: 1, supervised: 0 }
+        status: 'pending',
+        taskType: 'weekly-penalty',
+        evidence: []
     };
 
     try {
-        await createTask(penaltyData);
-        alert("¡ATENCIÓN! Se ha asignado la penalidad semanal automáticamente por no cumplir una penalidad de la jornada.");
+        await createTask({ ...basePenaltyData, deadline: saturday, day: 'saturday' });
+        await createTask({ ...basePenaltyData, deadline: sunday, day: 'sunday' });
+        alert("¡ATENCIÓN! Se ha impuesto la penalidad semanal automáticamente. Es obligatoria y no negociable.");
     } catch (error) {
         console.error("Error al asignar la penalidad semanal automáticamente:", error);
         alert("Hubo un error al intentar asignar la penalidad semanal.");
     }
 };
+
 
 /**
  * Genera el reporte para una jornada específica (mañana o tarde)
@@ -401,7 +425,7 @@ const generateJornadaReport = async (jornada) => {
             );
 
             if (uncompletedPenalty) {
-                await assignWeeklyPenalty();
+                await assignWeeklyPenalty(now);
             }
         }
 
@@ -526,7 +550,7 @@ const generateReport = async () => {
 const generateWeeklyReport = async () => {
     if (!currentUser || !currentUserProfile) return;
 
-    const today = new Date();
+    const today = await getSecureTime();
     const isSaturday = today.getDay() === 6;
     const isSupervisor = currentUserProfile.role === 'supervisor';
     let tasks = [];
@@ -558,10 +582,11 @@ const generateWeeklyReport = async () => {
             </div>
         `;
 
-        if (isSaturday && percentage < 80) {
+        if (isSaturday && percentage < 80 && isSupervisor) {
+            await assignWeeklyPenalty(today);
             reportHTML += `
                 <div class="penalty-section">
-                    <h3>⚠️ Penalidad Activa</h3>
+                    <h3>⚠️ Penalidad Asignada Automáticamente</h3>
                     <p class="penalty-text">"El usuario deberá realizar todas las labores del hogar durante sábado y domingo, sin que nadie más las asuma en su lugar. El cumplimiento o incumplimiento afectará a todos, recordando que la negligencia siempre pesa sobre otros."</p>
                     <hr>
                     <p class="reflection-text">Reflexión: Esta carga no se limita al esfuerzo físico: busca enseñar que la fidelidad en lo pequeño libera, mientras que la evasión del deber esclaviza. Las tareas del hogar, asumidas en silencio y sin delegar, son un ejercicio de servicio, purificación y disciplina interior. Lo que parece castigo se transforma en camino de corrección y crecimiento en virtud.</p>
