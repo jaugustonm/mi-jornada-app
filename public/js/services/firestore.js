@@ -325,7 +325,10 @@ export const getTasksForTimeRange = async (userId, startTime, endTime, isSupervi
     const querySnapshot = await getDocs(q);
     const tasks = [];
     querySnapshot.forEach((doc) => {
-        tasks.push({ id: doc.id, ...doc.data() });
+        const taskData = doc.data();
+        if (taskData.taskType !== 'weekly-penalty') { // Filtrado en el lado del cliente
+            tasks.push({ id: doc.id, ...taskData });
+        }
     });
     return tasks;
 };
