@@ -104,6 +104,7 @@
             </form>
         </div>
     </div>
+
     <div id="camera-modal" class="modal hidden">
         <div class="modal-content">
             <video id="camera-feed" autoplay playsinline></video>
@@ -113,6 +114,7 @@
             <button id="upload-button" class="hidden">Subir Evidencia</button>
         </div>
     </div>
+
     <div id="comment-modal" class="modal hidden">
         <div class="modal-content">
             <h2>Añadir Comentario</h2>
@@ -122,6 +124,7 @@
             </form>
         </div>
     </div>
+
     <div id="report-modal" class="modal hidden">
         <div class="modal-content">
             <h2 id="report-modal-title">Reporte de Cumplimiento</h2>
@@ -149,6 +152,7 @@
             <button id="close-report-button">Cerrar</button>
         </div>
     </div>
+
     <div id="weekly-report-modal" class="modal hidden">
         <div class="modal-content">
             <h2>Reporte Semanal de Cumplimiento</h2>
@@ -158,6 +162,7 @@
             <button id="close-weekly-report-button">Cerrar</button>
         </div>
     </div>
+
     <div id="reward-modal" class="modal hidden">
         <div class="modal-content">
             <h2>Asignar Recompensa</h2>
@@ -167,6 +172,7 @@
             </form>
         </div>
     </div>
+
     <div id="negotiation-modal" class="modal hidden">
         <div class="modal-content">
             <h2 id="negotiation-modal-title">Proponer Alternativa</h2>
@@ -181,6 +187,7 @@
             </form>
         </div>
     </div>
+
     <div id="supervisor-rejection-options-modal" class="modal hidden">
         <div class="modal-content">
             <h2>Rechazar Propuesta</h2>
@@ -191,6 +198,7 @@
             </div>
         </div>
     </div>
+
     <div id="forgot-password-modal" class="modal hidden">
         <div class="modal-content">
             <h2>Restablecer Contraseña</h2>
@@ -202,11 +210,15 @@
             </form>
         </div>
     </div>
+    
     <div id="ai-assistance-modal" class="modal hidden">
         <div class="modal-content">
             <h2>Asistencia de IA para Penalidad</h2>
             <p>Se ha alcanzado el límite de negociaciones. Copia el siguiente texto y pégalo en tu IA de preferencia para obtener una penalidad justa y razonable.</p>
-            <pre id="ai-prompt-container"></pre>
+            <div class="prompt-wrapper">
+                <pre id="ai-prompt-container"></pre>
+                <button id="copy-prompt-button">Copiar Prompt</button>
+            </div>
             <hr>
             <h3>Establecer Penalidad Final</h3>
             <form id="final-penalty-form">
@@ -226,6 +238,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-messaging-compat.js"></script>
     <script type="module" src="js/main.js"></script>
+    
     <script>
         const darkModeToggle = document.getElementById('dark-mode-toggle');
         darkModeToggle.addEventListener('click', () => {

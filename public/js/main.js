@@ -91,6 +91,7 @@ const proposeNewPenaltyBtn = document.getElementById('propose-new-penalty-btn');
 const aiAssistanceModal = document.getElementById('ai-assistance-modal');
 const aiPromptContainer = document.getElementById('ai-prompt-container');
 const finalPenaltyForm = document.getElementById('final-penalty-form');
+const copyPromptButton = document.getElementById('copy-prompt-button'); // Elemento añadido
 
 // ELEMENTOS PARA RESTABLECER CONTRASEÑA
 const forgotPasswordLink = document.getElementById('forgot-password-link');
@@ -948,6 +949,24 @@ document.addEventListener('DOMContentLoaded', () => {
     rewardForm.addEventListener('submit', handleRewardAssignment);
     finalPenaltyForm.addEventListener('submit', handleFinalPenalty);
     forgotPasswordForm.addEventListener('submit', handleForgotPassword);
+
+    // --- NUEVO EVENTO PARA EL BOTÓN DE COPIAR ---
+    if (copyPromptButton) {
+        copyPromptButton.addEventListener('click', () => {
+            const promptText = aiPromptContainer.textContent;
+            navigator.clipboard.writeText(promptText).then(() => {
+                const originalText = copyPromptButton.textContent;
+                copyPromptButton.textContent = '¡Copiado!';
+                setTimeout(() => {
+                    copyPromptButton.textContent = originalText;
+                }, 2000);
+            }).catch(err => {
+                console.error('Error al copiar el texto: ', err);
+                alert('No se pudo copiar el texto.');
+            });
+        });
+    }
+    // --- FIN DEL NUEVO EVENTO ---
 
     commentForm.addEventListener('submit', async (e) => {
         e.preventDefault();
