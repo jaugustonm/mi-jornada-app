@@ -64,6 +64,7 @@ header h1 {
 main {
     max-width: 1100px;
     margin: 20px auto;
+    padding: 0 15px;
 }
 
 .hidden {
@@ -126,6 +127,7 @@ main {
     padding: 15px;
     border-radius: 10px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    flex-wrap: wrap;
 }
 
 .date-filter-container label {
@@ -540,9 +542,39 @@ main {
     background-color: #3f3183;
 }
 
-/* --- Estilos para Móviles --- */
+/* ===============================================================
+  Media Queries for Responsiveness
+  =============================================================== */
+@media (min-width: 768px) {
+    .tasks-container {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
 @media (max-width: 768px) {
     header {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .controls-container {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .date-filter-container {
         justify-content: center;
+    }
+
+    .report-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+        max-width: 300px;
+    }
+
+    .modal-content {
+        max-width: 90%;
     }
 }
