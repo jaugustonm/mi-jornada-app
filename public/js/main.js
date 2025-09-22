@@ -1,6 +1,7 @@
 // ======================================================================
-// ARCHIVO COMPLETO Y CORREGIDO: js/main.js
-// INCLUYE TODAS LAS MODIFICACIONES SOLICITADAS
+// ARCHIVO COMPLETO: js/main.js
+// La lógica sigue siendo la misma, separando penalidades y tareas.
+// El cambio de posición se maneja directamente en el archivo HTML.
 // ======================================================================
 
 // --- IMPORTACIONES ---
@@ -119,10 +120,13 @@ const formatDateForDisplay = (date) => {
 };
 
 /**
- * Formatea una fecha para el input de tipo date
+ * Formatea una fecha para el input de tipo date, respetando la zona horaria local.
  */
 const formatDateForInput = (date) => {
-    return date.toISOString().split('T')[0];
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
 };
 
 /**
@@ -173,10 +177,10 @@ const loadTasksForSelectedDate = () => {
 
 /**
  * Muestra las tareas en los contenedores correspondientes, agrupadas por estado.
- * Ahora es asíncrona para obtener la hora del servidor.
  */
 const displayTasks = async (tasks) => {
     const containers = [
+        'penalties-list',
         'morning-tasks-pending', 'morning-tasks-completed',
         'afternoon-tasks-pending', 'afternoon-tasks-completed'
     ];
@@ -187,41 +191,56 @@ const displayTasks = async (tasks) => {
 
     if (!currentUserProfile) return;
 
+    const penalties = tasks.filter(task => task.taskType === 'penalty');
+    const regularTasks = tasks.filter(task => task.taskType !== 'penalty' && task.taskType !== 'weekly-penalty');
+
     if (tasks.length === 0) {
         const noTasksMessage = `
             <div class="task-card" style="text-align: center; color: #666;">
-                <h3>No hay tareas para este día</h3>
-                <p>No se han asignado tareas para la fecha seleccionada.</p>
+                <h3>No hay tareas ni penalidades para este día</h3>
             </div>
         `;
         document.getElementById('morning-tasks-pending').innerHTML = noTasksMessage;
         return;
     }
-
+    
     tasks.sort((a, b) => (a.deadline?.toDate() || 0) - (b.deadline?.toDate() || 0));
-
+    
     const now = await getSecureTime();
 
-    tasks.forEach(task => {
-        const deadlineHour = task.deadline?.toDate().getHours() || 12;
-        const taskHTML = renderTask(task, currentUserProfile.role, now);
+    const penaltiesContainer = document.getElementById('penalties-list');
+    if (penalties.length > 0) {
+        penalties.forEach(penalty => {
+            const penaltyHTML = renderTask(penalty, currentUserProfile.role, now);
+            penaltiesContainer.innerHTML += penaltyHTML;
+        });
+    } else {
+        penaltiesContainer.innerHTML = `<div class="task-card" style="text-align: center; color: #666;"><p>No hay penalidades asignadas para hoy.</p></div>`;
+    }
 
-        const isCompleted = task.status === 'completed' || task.status === 'validated';
-        
-        if (deadlineHour < 14) {
-            if (isCompleted) {
-                document.getElementById('morning-tasks-completed').innerHTML += taskHTML;
+    if (regularTasks.length > 0) {
+        regularTasks.forEach(task => {
+            const deadlineHour = task.deadline?.toDate().getHours() || 12;
+            const taskHTML = renderTask(task, currentUserProfile.role, now);
+            const isCompleted = task.status === 'completed' || task.status === 'validated';
+            
+            if (deadlineHour < 14) {
+                if (isCompleted) {
+                    document.getElementById('morning-tasks-completed').innerHTML += taskHTML;
+                } else {
+                    document.getElementById('morning-tasks-pending').innerHTML += taskHTML;
+                }
             } else {
-                document.getElementById('morning-tasks-pending').innerHTML += taskHTML;
+                if (isCompleted) {
+                    document.getElementById('afternoon-tasks-completed').innerHTML += taskHTML;
+                } else {
+                    document.getElementById('afternoon-tasks-pending').innerHTML += taskHTML;
+                }
             }
-        } else {
-            if (isCompleted) {
-                document.getElementById('afternoon-tasks-completed').innerHTML += taskHTML;
-            } else {
-                document.getElementById('afternoon-tasks-pending').innerHTML += taskHTML;
-            }
-        }
-    });
+        });
+    } else {
+        document.getElementById('morning-tasks-pending').innerHTML = `<div class="task-card" style="text-align: center; color: #666;"><p>No hay tareas regulares para hoy.</p></div>`;
+    }
 
     tasks.forEach(task => {
         const commentsContainer = document.querySelector(`.task-card[data-id="${task.id}"] .task-comments-container`);
@@ -240,7 +259,6 @@ const displayTasks = async (tasks) => {
         }
     });
 };
-
 
 /**
  * Abre la cámara para tomar fotos
@@ -699,7 +717,6 @@ const showAIAssistanceModal = (task, taskId) => {
     negotiationContext.taskId = taskId;
 };
 
-
 const handleFinalPenalty = async (e) => {
     e.preventDefault();
     const title = document.getElementById('final-penalty-title').value;
@@ -726,11 +743,10 @@ const handleFinalPenalty = async (e) => {
 const handleTaskCreation = async (e) => {
     e.preventDefault();
 
-    // --- MODIFICADO: Confirmación para el supervisado ---
     if (currentUserProfile.role === 'supervisado') {
         const isConfirmed = confirm("¿Estás seguro de que quieres crear esta tarea? Una vez creada, el proceso es irreversible y quedará registrada.");
         if (!isConfirmed) {
-            return; // Detiene la ejecución si el usuario cancela
+            return;
         }
     }
 
@@ -827,13 +843,10 @@ document.addEventListener('DOMContentLoaded', () => {
     generateWeeklyReportButton.addEventListener('click', generateWeeklyReport);
     closeWeeklyReportButton.addEventListener('click', () => weeklyReportModal.classList.add('hidden'));
 
-    // --- MODIFICADO ---
-    // Maneja el cierre de cualquier modal y resetea el ID de la tarea si es necesario
     document.addEventListener('click', (e) => {
         if (e.target.classList.contains('modal')) {
             e.target.classList.add('hidden');
             if (e.target === cameraModal) closeCamera();
-            // Si el modal de comentarios se cierra, reseteamos el ID para evitar errores
             if (e.target === commentModal) {
                 currentTaskId = null;
             }
@@ -850,7 +863,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const taskData = taskDoc.data();
         const proposalCounts = taskData.proposalCounts || { supervisor: 0, supervised: 0 };
 
-
         if (e.target.classList.contains('validate-btn')) {
             await updateDocument('tasks', taskId, { status: 'validated' });
         } else if (e.target.classList.contains('reject-btn')) {
@@ -862,7 +874,6 @@ document.addEventListener('DOMContentLoaded', () => {
             currentTaskId = taskId;
             commentModal.classList.remove('hidden');
         } else if (e.target.classList.contains('accept-btn')) {
-            // --- MODIFICADO: Confirmación para el supervisado ---
             const isConfirmed = confirm("¿Estás seguro de que quieres aceptar esta penalidad? Una vez aceptada, el proceso es irreversible.");
             if (isConfirmed) {
                 await updateDocument('tasks', taskId, {
@@ -875,7 +886,6 @@ document.addEventListener('DOMContentLoaded', () => {
             await updateDocument('tasks', taskId, { status: 'rejected' });
             alert("Penalidad rechazada. Ahora puedes proponer una alternativa.");
         } else if (e.target.classList.contains('accept-task-btn')) {
-            // --- MODIFICADO: Confirmación para el supervisado ---
             const isConfirmed = confirm("¿Estás seguro de que quieres aceptar esta tarea? Una vez aceptada, el proceso es irreversible.");
             if (isConfirmed) {
                 await updateDocument('tasks', taskId, {
