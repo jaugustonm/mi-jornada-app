@@ -8,7 +8,7 @@
     --primary-color: #1d3557; /* Azul marino profundo */
     --secondary-color: #457b9d; /* Azul grisáceo */
     --accent-color: #e63946; /* Rojo vibrante */
-    --background-color: #f1faee; /* Beige muy claro */
+    --background-color: #ffffff; /* Fondo blanco */
     --card-bg: #ffffff;
     --text-color: #34495e;
     --border-color: #e0e0e0;
@@ -538,4 +538,11 @@ main {
 
 .modal button[type="submit"]:hover {
     background-color: #3f3183;
+}
+
+/* --- Estilos para Móviles --- */
+@media (max-width: 768px) {
+    header {
+        justify-content: center;
+    }
 }

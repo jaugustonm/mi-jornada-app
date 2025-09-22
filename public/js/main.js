@@ -26,6 +26,8 @@ import {
 import { renderTask } from './ui/components.js';
 import { uploadImage } from './services/cloudinary.js';
 import { getSecureTime } from './services/time.js';
+import { getToken, onMessage } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-messaging.js";
+import { messaging } from './config/firebase-config.js';
 
 // --- SELECCIÓN DE ELEMENTOS DEL DOM ---
 const authView = document.getElementById('auth-view');
@@ -106,6 +108,33 @@ let selectedDate = new Date();
 let negotiationContext = {
     taskId: null,
     isSupervisorCounter: false
+};
+
+
+// --- FUNCIÓN PARA SOLICITAR PERMISO DE NOTIFICACIONES ---
+const requestNotificationPermission = async () => {
+    console.log('Solicitando permiso para notificaciones...');
+    try {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+            console.log('Permiso de notificación concedido.');
+            // Obtenemos el token del dispositivo usando la clave pública VAPID
+            const token = await getToken(messaging, { vapidKey: 'BEAPqyLnIDLJZQ7QgKx0C6JK4pAMUz0wZTjn4JnUJR_bJcy4AgwRb_v9p4rhGzOKayZFQwQAMBPVl9OYbfRrMjs' });
+            if (token) {
+                console.log('Token del dispositivo:', token);
+                // Si el usuario es supervisor, guardamos el token en su perfil de Firestore
+                if (currentUserProfile && currentUserProfile.role === 'supervisor') {
+                    await updateDocument('users', currentUser.uid, { fcmToken: token });
+                }
+            } else {
+                console.log('No se pudo obtener el token de registro.');
+            }
+        } else {
+            console.log('No se pudo obtener el permiso para notificar.');
+        }
+    } catch (error) {
+        console.error('Ocurrió un error al solicitar el permiso:', error);
+    }
 };
 
 
@@ -1036,6 +1065,19 @@ onAuthState(async (user) => {
             appView.classList.remove('hidden');
             loadTasksForSelectedDate();
             console.log('Usuario autenticado:', user.email, 'Rol:', currentUserProfile.role);
+
+            // Si el usuario es supervisor, solicita permiso para notificaciones
+            if (currentUserProfile.role === 'supervisor') {
+                requestNotificationPermission();
+            }
+            
+            // Escucha mensajes de notificación mientras la app está activa
+            onMessage(messaging, (payload) => {
+                console.log('Mensaje recibido en primer plano: ', payload);
+                // Muestra una alerta simple, pero podrías implementar un toast o banner más elegante
+                alert(`Notificación: ${payload.notification.title}\n\n${payload.notification.body}`);
+            });
+
         } else {
             console.error('No se pudo cargar el perfil del usuario');
         }
