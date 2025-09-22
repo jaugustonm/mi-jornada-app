@@ -1,5 +1,5 @@
 // ======================================================================
-// ARCHIVO COMPLETO: js/main.js
+// ARCHIVO COMPLETO Y CORREGIDO: js/main.js
 // La lógica sigue siendo la misma, separando penalidades y tareas.
 // El cambio de posición se maneja directamente en el archivo HTML.
 // ======================================================================
@@ -179,72 +179,62 @@ const loadTasksForSelectedDate = () => {
  * Muestra las tareas en los contenedores correspondientes, agrupadas por estado.
  */
 const displayTasks = async (tasks) => {
-    const containers = [
-        'penalties-list',
-        'morning-tasks-pending', 'morning-tasks-completed',
-        'afternoon-tasks-pending', 'afternoon-tasks-completed'
-    ];
-    containers.forEach(id => {
-        const container = document.getElementById(id);
-        if (container) container.innerHTML = '';
-    });
+    // Definimos los contenedores y los mensajes por defecto
+    const containers = {
+        'penalties-list': { element: document.getElementById('penalties-list'), content: [], emptyMessage: `<div class="task-card empty-message" style="text-align: center; color: #666; font-style: italic;">No hay penalidades asignadas para este día.</div>` },
+        'morning-tasks-pending': { element: document.getElementById('morning-tasks-pending'), content: [], emptyMessage: `<div class="task-card empty-message" style="text-align: center; color: #666; font-style: italic;">No hay tareas pendientes para la mañana.</div>` },
+        'morning-tasks-completed': { element: document.getElementById('morning-tasks-completed'), content: [], emptyMessage: `<div class="task-card empty-message" style="text-align: center; color: #666; font-style: italic;">No hay tareas completadas en la mañana.</div>` },
+        'afternoon-tasks-pending': { element: document.getElementById('afternoon-tasks-pending'), content: [], emptyMessage: `<div class="task-card empty-message" style="text-align: center; color: #666; font-style: italic;">No hay tareas pendientes para la tarde.</div>` },
+        'afternoon-tasks-completed': { element: document.getElementById('afternoon-tasks-completed'), content: [], emptyMessage: `<div class="task-card empty-message" style="text-align: center; color: #666; font-style: italic;">No hay tareas completadas en la tarde.</div>` }
+    };
+
+    // Limpia todos los contenedores antes de rellenarlos
+    for (const key in containers) {
+        containers[key].element.innerHTML = '';
+    }
 
     if (!currentUserProfile) return;
     
+    // Ordena las tareas
     tasks.sort((a, b) => {
         if (a.taskType === 'weekly-penalty' && b.taskType !== 'weekly-penalty') return -1;
         if (a.taskType !== 'weekly-penalty' && b.taskType === 'weekly-penalty') return 1;
         return (a.deadline?.toDate() || 0) - (b.deadline?.toDate() || 0);
     });
 
-    const penalties = tasks.filter(task => task.taskType === 'penalty' || task.taskType === 'weekly-penalty');
-    const regularTasks = tasks.filter(task => task.taskType !== 'penalty' && task.taskType !== 'weekly-penalty');
-
-    if (tasks.length === 0) {
-        const noTasksMessage = `
-            <div class="task-card" style="text-align: center; color: #666;">
-                <h3>No hay tareas ni penalidades para este día</h3>
-            </div>
-        `;
-        document.getElementById('morning-tasks-pending').innerHTML = noTasksMessage;
-        return;
-    }
-    
     const now = await getSecureTime();
 
-    const penaltiesContainer = document.getElementById('penalties-list');
-    if (penalties.length > 0) {
-        penalties.forEach(penalty => {
-            const penaltyHTML = renderTask(penalty, currentUserProfile.role, now);
-            penaltiesContainer.innerHTML += penaltyHTML;
-        });
-    } else {
-        penaltiesContainer.innerHTML = `<div class="task-card" style="text-align: center; color: #666;"><p>No hay penalidades asignadas para hoy.</p></div>`;
-    }
+    // Distribuye las tareas en las listas correctas
+    tasks.forEach(task => {
+        const taskHTML = renderTask(task, currentUserProfile.role, now);
 
-    if (regularTasks.length > 0) {
-        regularTasks.forEach(task => {
+        if (task.taskType === 'penalty' || task.taskType === 'weekly-penalty') {
+            containers['penalties-list'].content.push(taskHTML);
+        } else {
             const deadlineHour = task.deadline?.toDate().getHours() || 12;
-            const taskHTML = renderTask(task, currentUserProfile.role, now);
             const isCompleted = task.status === 'completed' || task.status === 'validated';
             
             if (deadlineHour < 14) {
                 if (isCompleted) {
-                    document.getElementById('morning-tasks-completed').innerHTML += taskHTML;
+                    containers['morning-tasks-completed'].content.push(taskHTML);
                 } else {
-                    document.getElementById('morning-tasks-pending').innerHTML += taskHTML;
+                    containers['morning-tasks-pending'].content.push(taskHTML);
                 }
             } else {
                 if (isCompleted) {
-                    document.getElementById('afternoon-tasks-completed').innerHTML += taskHTML;
+                    containers['afternoon-tasks-completed'].content.push(taskHTML);
                 } else {
-                    document.getElementById('afternoon-tasks-pending').innerHTML += taskHTML;
+                    containers['afternoon-tasks-pending'].content.push(taskHTML);
                 }
             }
-        });
-    } else {
-        document.getElementById('morning-tasks-pending').innerHTML = `<div class="task-card" style="text-align: center; color: #666;"><p>No hay tareas regulares para hoy.</p></div>`;
+        }
+    });
+
+    // Rellena los contenedores con el contenido o el mensaje de vacío
+    for (const key in containers) {
+        containers[key].element.innerHTML = containers[key].content.length > 0 ? containers[key].content.join('') : containers[key].emptyMessage;
     }
+
 
     tasks.forEach(task => {
         const commentsContainer = document.querySelector(`.task-card[data-id="${task.id}"] .task-comments-container`);

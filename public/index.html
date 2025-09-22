@@ -4,16 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Jornada Divertida</title>
-
+    
     <link rel="icon" href="data:,">
-
+    
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/animations.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
     <header>
         <h1>Mi Jornada</h1>
+        <button id="dark-mode-toggle">☀️</button>
         <div id="user-info" class="hidden">
             <span id="user-email"></span>
             <button id="logout-button">Salir</button>
@@ -22,25 +24,33 @@
 
     <main>
         <section id="auth-view">
-            <h2>¡Bienvenido!</h2>
-            <form id="login-form">
-                <input type="email" id="login-email" placeholder="Correo" required>
-                <input type="password" id="login-password" placeholder="Contraseña" required>
-                <button type="submit">Ingresar</button>
-            </form>
+            <div class="auth-card">
+                <h2>¡Bienvenido!</h2>
+                <p class="slogan">Tu aliado para una jornada productiva y ordenada.</p>
+                <form id="login-form">
+                    <div class="form-group">
+                        <input type="email" id="login-email" placeholder="Correo" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="login-password" placeholder="Contraseña" required>
+                    </div>
+                    <button type="submit">Ingresar</button>
+                </form>
+            </div>
         </section>
 
         <section id="app-view" class="hidden">
-            <div class="date-filter-container">
-                <label for="date-filter">Ver tareas del día:</label>
-                <input type="date" id="date-filter">
-                <button id="today-button">Hoy</button>
-            </div>
-
-            <div class="report-container">
-                <button id="generate-morning-report-button">Reporte Mañana</button>
-                <button id="generate-afternoon-report-button">Reporte Tarde</button>
-                <button id="generate-weekly-report-button">Generar Reporte Semanal</button>
+            <div class="controls-container">
+                <div class="date-filter-container">
+                    <label for="date-filter">Ver tareas del día:</label>
+                    <input type="date" id="date-filter">
+                    <button id="today-button">Hoy</button>
+                </div>
+                <div class="report-container">
+                    <button id="generate-morning-report-button">Reporte Mañana</button>
+                    <button id="generate-afternoon-report-button">Reporte Tarde</button>
+                    <button id="generate-weekly-report-button">Reporte Semanal</button>
+                </div>
             </div>
 
             <div id="selected-date-display" class="selected-date">
@@ -48,44 +58,40 @@
             </div>
 
             <div class="tasks-container">
-                <h2>Tareas de la Mañana</h2>
-                <div class="tasks-group">
-                    <h3 class="tasks-group-title">Pendientes y En Negociación</h3>
-                    <div id="morning-tasks-pending" class="task-list"></div>
+                <div class="tasks-section">
+                    <h2>Tareas de la Mañana</h2>
+                    <div class="task-list pending" id="morning-tasks-pending"></div>
+                    <div class="task-list completed" id="morning-tasks-completed"></div>
                 </div>
-                <div class="tasks-group">
-                    <h3 class="tasks-group-title">Completadas y Validadas</h3>
-                    <div id="morning-tasks-completed" class="task-list task-list-completed"></div>
+                <div class="tasks-section">
+                    <h2>Tareas de la Tarde</h2>
+                    <div class="task-list pending" id="afternoon-tasks-pending"></div>
+                    <div class="task-list completed" id="afternoon-tasks-completed"></div>
                 </div>
             </div>
 
-            <div class="tasks-container">
-                <h2>Tareas de la Tarde</h2>
-                <div class="tasks-group">
-                    <h3 class="tasks-group-title">Pendientes y En Negociación</h3>
-                    <div id="afternoon-tasks-pending" class="task-list"></div>
-                </div>
-                <div class="tasks-group">
-                    <h3 class="tasks-group-title">Completadas y Validadas</h3>
-                    <div id="afternoon-tasks-completed" class="task-list task-list-completed"></div>
-                </div>
-            </div>
-            
-            <div class="tasks-container">
+            <div class="tasks-section" style="margin-top: 20px;">
                 <h2>Penalidades del Día</h2>
-                <div id="penalties-list" class="task-list"></div>
+                <div class="task-list" id="penalties-list"></div>
             </div>
+
             <button id="add-task-button" class="fab">+</button>
         </section>
     </main>
 
     <div id="add-task-modal" class="modal hidden">
-        <div class="modal-content">
+        <div class="modal-content" id="add-task-modal-content">
             <h2>Nueva Tarea</h2>
             <form id="add-task-form">
-                <input type="text" id="task-title" placeholder="Título de la tarea" required>
-                <textarea id="task-description" placeholder="Descripción..." required></textarea>
-                <input type="datetime-local" id="task-deadline" required>
+                <div class="form-group">
+                    <input type="text" id="task-title" placeholder="Título de la tarea" required>
+                </div>
+                <div class="form-group">
+                    <textarea id="task-description" placeholder="Descripción..." required></textarea>
+                </div>
+                <div class="form-group">
+                    <input type="datetime-local" id="task-deadline" required>
+                </div>
                 <label>
                     <input type="checkbox" id="task-mandatory">
                     ¿Es obligatoria?
@@ -127,9 +133,15 @@
                 <hr>
                 <h3>Sugerir una Penalidad</h3>
                 <form id="penalty-form">
-                    <input type="text" id="penalty-title" placeholder="Título de la penalidad" required>
-                    <textarea id="penalty-description" placeholder="Descripción de la penalidad..." required></textarea>
-                    <input type="datetime-local" id="penalty-deadline" required>
+                    <div class="form-group">
+                        <input type="text" id="penalty-title" placeholder="Título de la penalidad" required>
+                    </div>
+                    <div class="form-group">
+                        <textarea id="penalty-description" placeholder="Descripción de la penalidad..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <input type="datetime-local" id="penalty-deadline" required>
+                    </div>
                     <button type="submit">Sugerir Penalidad</button>
                 </form>
             </div>
@@ -162,8 +174,12 @@
         <div class="modal-content">
             <h2 id="negotiation-modal-title">Proponer Alternativa</h2>
             <form id="negotiation-form">
-                <input type="text" id="negotiation-title" placeholder="Nuevo título de la penitencia" required>
-                <textarea id="negotiation-description" placeholder="Nueva descripción..." required></textarea>
+                <div class="form-group">
+                    <input type="text" id="negotiation-title" placeholder="Nuevo título de la penitencia" required>
+                </div>
+                <div class="form-group">
+                    <textarea id="negotiation-description" placeholder="Nueva descripción..." required></textarea>
+                </div>
                 <button type="submit">Enviar Propuesta</button>
             </form>
         </div>
@@ -188,8 +204,12 @@
             <hr>
             <h3>Establecer Penalidad Final</h3>
             <form id="final-penalty-form">
-                <input type="text" id="final-penalty-title" placeholder="Título de la penalidad final" required>
-                <textarea id="final-penalty-description" placeholder="Descripción de la penalidad final..." required></textarea>
+                <div class="form-group">
+                    <input type="text" id="final-penalty-title" placeholder="Título de la penalidad final" required>
+                </div>
+                <div class="form-group">
+                    <textarea id="final-penalty-description" placeholder="Descripción de la penalidad final..." required></textarea>
+                </div>
                 <button type="submit">Guardar Penalidad Final</button>
             </form>
         </div>
@@ -199,6 +219,18 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script type="module" src="js/main.js"></script>
-
+    <script>
+        const darkModeToggle = document.getElementById('dark-mode-toggle');
+        darkModeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            darkModeToggle.textContent = isDarkMode ? '🌙' : '☀️';
+            localStorage.setItem('darkMode', isDarkMode);
+        });
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+            darkModeToggle.textContent = '🌙';
+        }
+    </script>
 </body>
 </html>

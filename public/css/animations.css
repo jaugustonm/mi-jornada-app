@@ -1,0 +1,87 @@
+/* ======================================================================
+   ARCHIVO COMPLETO: css/animations.css
+   Contiene animaciones sutiles para mejorar la experiencia de usuario.
+   ====================================================================== */
+
+/* --- Animaciones de Entrada y Salida para Modales --- */
+.modal-content {
+    animation-name: modal-slide-in;
+    animation-duration: 0.4s;
+    animation-timing-function: ease-out;
+}
+
+.modal.hidden .modal-content {
+    animation-name: modal-slide-out;
+    animation-duration: 0.4s;
+    animation-timing-function: ease-in;
+    transform: translateY(20px) scale(0.95);
+    opacity: 0;
+}
+
+@keyframes modal-slide-in {
+    from {
+        transform: translateY(-50px) scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes modal-slide-out {
+    from {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+    to {
+        transform: translateY(-50px) scale(0.9);
+        opacity: 0;
+    }
+}
+
+/* --- Animación para el botón flotante (FAB) --- */
+.fab {
+    animation: fab-bounce 1s infinite alternate;
+}
+
+@keyframes fab-bounce {
+    from {
+        transform: translateY(0);
+    }
+    to {
+        transform: translateY(-5px);
+    }
+}
+
+/* --- Animación de los botones al hacer click --- */
+button:not(.fab):not(#dark-mode-toggle):active,
+.task-actions button:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+}
+
+/* --- Transición de las tarjetas de tarea --- */
+.task-card,
+.task-card:hover {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* --- Animación para notificaciones (como un 'flash' al cargar) --- */
+@keyframes highlight-task {
+    0% {
+        box-shadow: 0 0 0 0 rgba(106, 27, 154, 0.7);
+    }
+    100% {
+        box-shadow: 0 0 0 8px rgba(106, 27, 154, 0);
+    }
+}
+
+.task-card.new {
+    animation: highlight-task 1.5s ease-out;
+}
+
+/* --- Animación para la alternancia del modo oscuro --- */
+body {
+    transition: background-color 0.5s ease;
+}

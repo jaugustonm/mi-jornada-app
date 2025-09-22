@@ -1,18 +1,36 @@
 /* ======================================================================
    ARCHIVO COMPLETO Y ACTUALIZADO: css/style.css
-   Con estilos para la nueva vista de negociación de tareas.
+   Nueva paleta de colores, fuentes modernas y diseño corregido.
    ====================================================================== */
 
 /* --- Variables de Colores y Fuentes --- */
 :root {
-    --primary-color: #FF6B6B;
-    --secondary-color: #FFD93D;
-    --accent-color: #4ECDC4;
-    --background-color: #F7F9FB;
-    --text-color: #333;
-    --card-bg: #FFFFFF;
-    --font-main: 'Helvetica Neue', sans-serif;
-    --font-fun: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+    --primary-color: #5d3fd3; /* Púrpura oscuro */
+    --secondary-color: #8c7ae6; /* Púrpura más suave */
+    --accent-color: #e74c3c; /* Rojo elegante */
+    --background-color: #f5f6fa; /* Gris muy claro */
+    --card-bg: #ffffff;
+    --text-color: #34495e;
+    --border-color: #dfe4ea;
+    --light-gray: #f9f9fb;
+    --completed-color: #2ecc71; /* Verde esmeralda */
+    --penalty-color: #e74c3c; /* Rojo para penalidad */
+    --font-main: 'Poppins', sans-serif;
+    --font-title: 'Montserrat', sans-serif;
+}
+
+/* Modo Oscuro */
+body.dark-mode {
+    --primary-color: #bb86fc;
+    --secondary-color: #9875e6;
+    --accent-color: #e74c3c;
+    --background-color: #121212;
+    --card-bg: #1f1f1f;
+    --text-color: #e0e0e0;
+    --border-color: #333333;
+    --light-gray: #292929;
+    --completed-color: #03dac6;
+    --penalty-color: #e74c3c;
 }
 
 /* --- Estilos Generales --- */
@@ -21,23 +39,30 @@ body {
     background-color: var(--background-color);
     color: var(--text-color);
     margin: 0;
-    padding: 0 20px;
+    padding: 0;
+    transition: background-color 0.3s, color 0.3s;
 }
 
 header {
     padding: 20px;
     text-align: center;
-    border-bottom: 2px solid #eee;
+    border-bottom: 2px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
 header h1 {
-    font-family: var(--font-fun);
+    font-family: var(--font-title);
     color: var(--primary-color);
     font-size: 2.5em;
+    margin: 0;
 }
 
 main {
-    max-width: 800px;
+    max-width: 1100px;
     margin: 20px auto;
 }
 
@@ -46,77 +71,95 @@ main {
 }
 
 /* ===============================================================
-  Estilos para el Filtro de Fecha
-  ===============================================================
-*/
-.date-filter-container {
-    background-color: var(--card-bg);
-    border-radius: 10px;
+  Estilos para la Vista de Autenticación (Login)
+  =============================================================== */
+#auth-view {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: var(--background-color);
     padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.auth-card {
+    background-color: var(--card-bg);
+    padding: 40px 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    max-width: 400px;
+    width: 100%;
+    transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+.auth-card h2 {
+    font-family: var(--font-title);
+    color: var(--primary-color);
+    font-size: 2.5em;
+    margin-bottom: 10px;
+}
+
+.auth-card .slogan {
+    color: var(--secondary-color);
+    font-style: italic;
+    margin-bottom: 25px;
+    font-family: var(--font-main);
+}
+
+/* ===============================================================
+  Estilos para la Estructura de la Aplicación
+  =============================================================== */
+.controls-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+    margin-bottom: 25px;
+}
+
+.date-filter-container {
     display: flex;
     align-items: center;
-    gap: 15px;
-    flex-wrap: wrap;
+    gap: 10px;
+    background-color: var(--card-bg);
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .date-filter-container label {
-    font-weight: bold;
-    color: var(--text-color);
+    font-weight: 500;
 }
 
 #date-filter {
     padding: 8px 12px;
-    border: 2px solid #ddd;
+    border: 1px solid var(--border-color);
     border-radius: 6px;
     font-size: 14px;
-    min-width: 150px;
+    background-color: var(--background-color);
+    color: var(--text-color);
 }
 
 #today-button {
     padding: 8px 16px;
-    background-color: var(--accent-color);
+    background-color: var(--secondary-color);
     color: white;
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    font-weight: bold;
+    font-weight: 600;
     transition: background-color 0.2s;
 }
 
 #today-button:hover {
-    background-color: #3ba59c;
+    background-color: #5a6268;
 }
 
-.selected-date {
-    text-align: center;
-    margin-bottom: 20px;
-    padding: 10px;
-    background-color: #e3f2fd;
-    border-radius: 8px;
-    font-weight: bold;
-    color: #1976d2;
-}
-
-/* ===============================================================
-  Estilos para Reportes (Diario y Semanal)
-  ===============================================================
-*/
-.report-container {
-    text-align: center;
-    margin-bottom: 30px;
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    flex-wrap: wrap;
-}
-
-#generate-report-button,
-#generate-weekly-report-button {
-    padding: 12px 25px;
-    font-size: 16px;
-    font-weight: bold;
+.report-container button {
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 600;
     color: white;
     background-color: var(--primary-color);
     border: none;
@@ -125,171 +168,295 @@ main {
     transition: background-color 0.2s;
 }
 
-#generate-report-button:hover,
-#generate-weekly-report-button:hover {
-    background-color: #e63939;
+.report-container button:hover {
+    background-color: #3f3183;
 }
 
-#report-content,
-#weekly-report-content {
-    text-align: left;
-    margin-top: 20px;
-}
-
-.report-stat {
-    font-size: 1.2em;
-    margin-bottom: 10px;
-}
-
-.report-stat span {
-    font-weight: bold;
-    font-size: 1.5em;
-    color: var(--accent-color);
-}
-
-.report-unfulfilled-list {
-    list-style-type: none;
-    padding: 0;
-}
-
-.report-unfulfilled-list li {
-    background-color: #fff3f3;
-    padding: 10px;
-    border-radius: 5px;
-    margin-bottom: 8px;
-    border-left: 4px solid var(--primary-color);
-}
-
-/* --- Estilos para la Penalidad Semanal --- */
-
-.penalty-section {
-    margin-top: 25px;
-    padding: 15px;
-    border: 3px solid var(--primary-color);
-    border-radius: 10px;
-    background-color: #ffeaea; /* Rojo muy suave */
-}
-
-.penalty-section h3 {
-    color: var(--primary-color);
+#selected-date-display {
     text-align: center;
-    font-family: var(--font-fun);
-}
-
-.penalty-text {
     font-size: 1.1em;
-    color: #444;
-    margin-bottom: 15px;
-    font-style: italic;
-    border-left: 5px solid var(--primary-color);
-    padding-left: 10px;
+    font-weight: 500;
+    color: var(--primary-color);
+    margin-bottom: 20px;
 }
 
-.reflection-text {
-    font-size: 0.9em;
-    color: #666;
-    text-align: justify;
-    padding-top: 10px;
+/* Botón de Modo Oscuro */
+#dark-mode-toggle {
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    cursor: pointer;
+    color: var(--text-color);
 }
 
-.congrats-section {
-    margin-top: 25px;
-    padding: 15px;
-    border: 3px solid var(--accent-color);
-    border-radius: 10px;
-    background-color: #e6fffb; /* Verde/Cian suave */
-    color: #00796b;
+/* ===============================================================
+  Estilos de Contenedores de Tareas
+  =============================================================== */
+.tasks-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+}
+
+.tasks-section {
+    background-color: var(--card-bg);
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.tasks-section h2 {
+    font-family: var(--font-title);
+    color: var(--primary-color);
+    margin-top: 0;
     text-align: center;
 }
 
-.congrats-section h3 {
-    color: var(--accent-color);
-    font-family: var(--font-fun);
+.task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
 
-/* --- Estilos de las Tareas --- */
-.tasks-container h2 {
-    font-family: var(--font-fun);
-    color: var(--accent-color);
+.task-list.pending {
+    border-left: 4px solid var(--accent-color);
+    padding-left: 15px;
 }
 
+.task-list.completed {
+    border-left: 4px solid var(--completed-color);
+    padding-left: 15px;
+}
+
+/* ===============================================================
+  Estilos de las Tarjetas de Tarea
+  =============================================================== */
 .task-card {
-    background: var(--card-bg);
-    border-radius: 15px;
+    background: var(--background-color);
+    border-radius: 10px;
     padding: 15px 20px;
-    margin-bottom: 15px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    border-left: 5px solid var(--secondary-color);
 }
 
 .task-card:hover {
     transform: translateY(-3px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
 }
 
 .task-card.task-completed {
-    background-color: #e8f5e9;
-    opacity: 0.7;
-    border-left-color: #66BB6A;
+    background-color: var(--completed-color);
+    color: white;
+    opacity: 0.85;
+}
+
+.task-card.task-completed h3,
+.task-card.task-completed p {
+    color: white;
+}
+
+.task-card.task-completed .task-actions button,
+.task-card.task-completed .task-comments-container,
+.task-card.task-completed .negotiation-display {
+    border-color: rgba(255, 255, 255, 0.3);
 }
 
 .task-card.task-completed h3 {
     text-decoration: line-through;
-    color: #888;
 }
 
-/* --- NUEVOS ESTILOS PARA LA VISTA DE NEGOCIACIÓN --- */
+.task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.task-header h3 {
+    margin: 0;
+    font-size: 1.3em;
+}
+
+.task-badges {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.mandatory-badge,
+.penalty-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: 600;
+    color: white;
+}
+
+.mandatory-badge {
+    background-color: var(--secondary-color);
+}
+
+.penalty-badge {
+    background-color: var(--penalty-color);
+}
+
+.task-actions {
+    margin-top: 15px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.task-actions button {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9em;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.task-actions button:hover {
+    transform: translateY(-1px);
+}
+
+.validate-btn { background-color: var(--completed-color); color: white; }
+.reject-btn { background-color: var(--accent-color); color: white; }
+.evidence-btn { background-color: #2196F3; color: white; }
+.add-comment-btn { background-color: #9E9E9E; color: white; }
+.accept-btn, .accept-task-btn, .accept-proposal-btn { background-color: #4CAF50; color: white; }
+.decline-btn, .decline-task-btn { background-color: #F44336; color: white; }
+.propose-alternative-btn { background-color: #FFC107; color: var(--text-color); }
+.set-final-penalty-btn { background-color: #3F51B5; color: white; }
+.notify-third-party-btn { background-color: #FF9800; color: white; }
+.delete-task-btn { background-color: #9E9E9E; color: white; }
+
+/* ===============================================================
+  Estilos para Negociación y Comentarios
+  =============================================================== */
 .negotiation-display {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px dashed var(--border-color);
     display: flex;
     gap: 20px;
-    margin-top: 10px;
-    border-top: 1px solid #eee;
-    padding-top: 10px;
+    flex-wrap: wrap;
 }
 
 .negotiation-column {
     flex: 1;
-    background-color: #f9f9f9;
-    padding: 10px;
+    background-color: var(--background-color);
+    padding: 15px;
     border-radius: 8px;
+    border: 1px solid var(--border-color);
 }
 
 .negotiation-column h4 {
     margin-top: 0;
     color: var(--primary-color);
-    border-bottom: 2px solid var(--secondary-color);
+    border-bottom: 2px solid var(--light-gray);
     padding-bottom: 5px;
 }
 
-.negotiation-column:last-child h4 {
-    color: var(--accent-color);
-}
-
 .negotiation-title {
-    font-weight: bold;
+    font-weight: 600;
     font-size: 1.1em;
-    color: #333;
 }
 
 .negotiation-description {
     font-size: 0.95em;
-    color: #555;
+    color: var(--secondary-color);
 }
-
 
 .task-comments-container {
     margin-top: 15px;
-    padding-top: 10px;
-    border-top: 1px solid #eee;
+    padding-top: 15px;
+    border-top: 1px solid var(--border-color);
 }
 
 .task-comment {
-    background-color: #f9f9f9;
-    padding: 8px;
+    background-color: var(--light-gray);
+    padding: 10px;
     border-radius: 5px;
     margin-bottom: 5px;
     font-size: 0.9em;
+}
+
+/* ===============================================================
+  Estilos para Modales y Formularios
+  =============================================================== */
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.modal-content {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    padding: 25px; 
+    border-radius: 15px;
+    text-align: center;
+    max-width: 450px; 
+    width: 100%; 
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    box-sizing: border-box;
+    max-height: 90vh; 
+    overflow-y: auto;
+}
+
+/* FIX: Elimina la barra de desplazamiento horizontal */
+#add-task-modal-content {
+    overflow-y: hidden;
+    overflow-x: hidden;
+}
+
+.modal-content h2, .modal-content h3 {
+    color: var(--primary-color);
+    font-family: var(--font-title);
+}
+
+.report-stat {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+    color: var(--text-color);
+}
+
+.report-stat span {
+    font-weight: 600;
+    font-size: 1.3em;
+    color: var(--accent-color);
+}
+
+.penalty-section {
+    border: 2px solid var(--accent-color);
+    background-color: var(--light-gray);
+    padding: 20px;
+    border-radius: 10px;
+    margin-top: 20px;
+}
+
+.congrats-section {
+    border: 2px solid var(--completed-color);
+    background-color: var(--light-gray);
+    padding: 20px;
+    border-radius: 10px;
+    margin-top: 20px;
+}
+
+.status-expired {
+    color: var(--accent-color);
+    font-weight: bold;
 }
 
 /* --- Botón Flotante (FAB) --- */
@@ -306,142 +473,66 @@ main {
     font-size: 30px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     cursor: pointer;
-    transition: transform 0.2s ease;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+    z-index: 999;
 }
 
 .fab:hover {
     transform: scale(1.1);
 }
 
-/* --- Estilos para Modales --- */
-.modal {
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
+/* --- Estilos para los Formularios (General) --- */
+#login-form {
+    text-align: center; 
+}
+
+.form-group {
+    margin-bottom: 15px;
+    text-align: left; /* Alinea los elementos a la izquierda para mejor estética */
+}
+
+.modal input[type="text"],
+.modal textarea,
+.modal input[type="datetime-local"],
+#login-form input[type="email"], /* Selecciona el input de email del formulario de login */
+#login-form input[type="password"] { /* Selecciona el input de password del formulario de login */
     width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0, 0, 0, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.modal-content {
-    background-color: #fff;
-    padding: 20px 30px;
-    border-radius: 10px;
-    text-align: center;
-    max-width: 90%;
-    width: 500px;
-}
-
-.modal-actions {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    margin-top: 20px;
-}
-
-#add-task-form, #penalty-form, #negotiation-form, #final-penalty-form, #comment-form {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    text-align: left;
-}
-
-#add-task-form input,
-#penalty-form input,
-#negotiation-form input,
-#final-penalty-form input,
-#add-task-form textarea,
-#penalty-form textarea,
-#negotiation-form textarea,
-#final-penalty-form textarea,
-#comment-form textarea {
-    width: 95%;
-    padding: 10px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    font-family: var(--font-main);
-}
-
-#add-task-form textarea, #penalty-form textarea, #negotiation-form textarea, #final-penalty-form textarea, #comment-form textarea {
-    min-height: 80px;
-    resize: vertical;
-}
-
-#add-task-form button, #penalty-form button, #negotiation-form button, #final-penalty-form button, #comment-form button {
     padding: 12px;
-    border: none;
-    border-radius: 5px;
-    background-color: var(--accent-color);
-    color: white;
-    font-weight: bold;
-    cursor: pointer;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1em;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    transition: border-color 0.3s, box-shadow 0.3s;
+    box-sizing: border-box; 
+    text-align: left; /* Alinea el texto a la izquierda en los inputs del login */
 }
 
-#camera-feed {
+.modal input:focus,
+.modal textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+}
+
+.modal textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.modal button[type="submit"] {
     width: 100%;
-    max-width: 480px;
-    height: auto;
-    border-radius: 8px;
-    border: 2px solid #ddd;
-}
-
-.modal-content button {
-    margin-top: 15px;
-    padding: 10px 20px;
-    font-size: 16px;
-    cursor: pointer;
-}
-
-.task-actions button {
-    padding: 8px 12px;
+    padding: 12px;
+    background-color: var(--primary-color);
+    color: white;
     border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-right: 5px;
-    font-weight: bold;
-}
-
-.validate-btn { background-color: #4CAF50; color: white; }
-.reject-btn { background-color: #f44336; color: white; }
-.status-validated { color: #4CAF50; font-weight: bold; }
-.penalty-badge { background-color: var(--primary-color); color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; font-weight: bold; margin-left: 5px; }
-.accept-btn, .accept-proposal-btn { background-color: #4CAF50; color: white; }
-.decline-btn, .reject-proposal-btn { background-color: #f44336; color: white; }
-.propose-alternative-btn { background-color: #FFC107; color: var(--text-color); }
-.status-negotiation { font-style: italic; color: #666; }
-.add-comment-btn { background-color: #2196F3; color: white; }
-.notify-third-party-btn { background-color: #FF9800; color: white; }
-
-#restore-original-penalty-btn { background-color: var(--secondary-color); color: var(--text-color); }
-#propose-new-penalty-btn { background-color: var(--accent-color); color: white; }
-
-#ai-prompt-container {
-    background-color: #f0f0f0;
-    padding: 15px;
     border-radius: 8px;
-    text-align: left;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    max-height: 200px;
-    overflow-y: auto;
-    border: 1px solid #ccc;
+    font-weight: 600;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: background-color 0.3s;
 }
 
-.status-expired {
-    color: #f44336; /* Rojo */
-    font-weight: bold;
-    font-style: italic;
-}
-
-.status-notified {
-    border-left: 4px solid #FF9800;
-    padding-left: 10px;
-    margin: 10px 0;
-    font-size: 0.9em;
-    color: #555;
+.modal button[type="submit"]:hover {
+    background-color: #3f3183;
 }
