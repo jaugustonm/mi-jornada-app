@@ -34,7 +34,7 @@ messaging.onBackgroundMessage((payload) => {
 
 // --- LÓGICA DE CACHÉ (PWA) ---
 
-const CACHE_NAME = 'mi-jornada-app-cache-v3'; // Incrementamos la versión para forzar la actualización
+const CACHE_NAME = 'mi-jornada-app-cache-v5';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -46,11 +46,7 @@ const urlsToCache = [
   '/js/services/firestore.js',
   '/js/services/cloudinary.js',
   '/js/services/time.js',
-  '/js/ui/components.js',
-  '/js/ui/auth-ui.js'
-  // Se han eliminado las URLs externas (Google Fonts, Firebase CDN)
-  // para evitar errores de red y rate limiting (error 429).
-  // El navegador se encargará de cachear esos recursos por su cuenta.
+  '/js/ui/components.js'
 ];
 
 // Instala el Service Worker y guarda los archivos en caché
@@ -80,7 +76,9 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Intercepta las peticiones y responde desde la caché si es posible
+// ======================================================================
+// CORRECCIÓN FINAL: Lógica de fetch más robusta
+// ======================================================================
 self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request)
@@ -89,9 +87,28 @@ self.addEventListener('fetch', event => {
         if (response) {
           return response;
         }
-        // Si no, intenta buscarlo en la red.
-        return fetch(event.request);
-      }
-    )
+
+        // Si no está en caché, lo busca en la red.
+        return fetch(event.request).then(
+          (networkResponse) => {
+            // Si la petición es exitosa, la guardamos en caché para el futuro.
+            // Solo cacheamos peticiones GET exitosas del mismo origen.
+            if (networkResponse && networkResponse.status === 200 && event.request.method === 'GET' && event.request.url.startsWith(self.location.origin)) {
+              const responseToCache = networkResponse.clone();
+              caches.open(CACHE_NAME)
+                .then(cache => {
+                  cache.put(event.request, responseToCache);
+                });
+            }
+            return networkResponse;
+          }
+        ).catch(error => {
+            // Este catch maneja errores de red (cuando estás offline)
+            console.error('Service Worker: Fallo al buscar el recurso en la red.', error);
+            // Opcionalmente, podrías devolver una página de fallback aquí.
+            // Por ahora, dejamos que el error se propague para que el navegador lo muestre.
+            throw error;
+        });
+      })
   );
 });

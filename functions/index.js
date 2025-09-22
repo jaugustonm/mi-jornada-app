@@ -3,6 +3,11 @@ const admin = require("firebase-admin");
 
 admin.initializeApp();
 
+// ======================================================================
+// LA FUNCIONALIDAD DE NOTIFICACIONES HA SIDO DESACTIVADA
+// Se ha comentado el código para evitar que se ejecute.
+// ======================================================================
+/*
 // Esta función se ejecutará todos los días a las 12:00 PM y a las 8:00 PM (20:00)
 // en la zona horaria de Bogotá.
 exports.sendReportReminders = functions.pubsub.schedule("0 12,20 * * *")
@@ -43,3 +48,4 @@ exports.sendReportReminders = functions.pubsub.schedule("0 12,20 * * *")
 
         return null;
     });
+*/

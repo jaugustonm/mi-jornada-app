@@ -26,8 +26,9 @@ import {
 import { renderTask } from './ui/components.js';
 import { uploadImage } from './services/cloudinary.js';
 import { getSecureTime } from './services/time.js';
-import { getToken, onMessage } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-messaging.js";
-import { messaging } from './config/firebase-config.js';
+// Se comenta la importación de notificaciones ya que no se usará
+// import { getToken, onMessage } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-messaging.js";
+// import { messaging } from './config/firebase-config.js';
 
 // --- SELECCIÓN DE ELEMENTOS DEL DOM ---
 const authView = document.getElementById('auth-view');
@@ -114,7 +115,8 @@ let negotiationContext = {
 let currentFacingMode = 'user'; // 'user' para frontal, 'environment' para trasera
 
 
-// --- FUNCIÓN PARA SOLICITAR PERMISO DE NOTIFICACIONES ---
+// --- FUNCIÓN PARA SOLICITAR PERMISO DE NOTIFICACIONES (DESACTIVADA) ---
+/*
 const requestNotificationPermission = async () => {
     console.log('Solicitando permiso para notificaciones...');
     try {
@@ -139,7 +141,7 @@ const requestNotificationPermission = async () => {
         console.error('Ocurrió un error al solicitar el permiso:', error);
     }
 };
-
+*/
 
 // --- FUNCIONES AUXILIARES PARA FECHAS ---
 
@@ -1034,40 +1036,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const taskData = taskDoc.data();
         const proposalCounts = taskData.proposalCounts || { supervisor: 0, supervised: 0 };
 
-        // ===============================================================
-        // INICIO DE LA CORRECCIÓN PARA VALIDAR Y RECHAZAR TAREAS
-        // ===============================================================
         if (e.target.classList.contains('validate-btn')) {
-            try {
-                await updateDocument('tasks', taskId, { status: 'validated' });
-                // No se necesita un 'alert' aquí, la UI se actualizará automáticamente
-                // gracias a onSnapshot, mostrando que la tarea fue validada.
-            } catch (error) {
-                console.error("Error al validar la tarea:", error);
-                alert("Hubo un error al intentar validar la tarea. Por favor, revisa la consola.");
-            }
+            await updateDocument('tasks', taskId, { status: 'validated' });
         } else if (e.target.classList.contains('reject-btn')) {
-            try {
-                if (taskData.taskType === 'weekly-penalty') {
-                    await updateDocument('tasks', taskId, { status: 'rejected' });
-                    alert("Evidencia rechazada. Ahora puedes notificar a un tercero.");
-                } else {
-                    const isConfirmed = confirm("¿Estás seguro de que quieres rechazar esta evidencia? La tarea volverá al estado 'pendiente' para que se pueda subir una nueva evidencia.");
-                    if (isConfirmed) {
-                        await updateDocument('tasks', taskId, {
-                            status: 'pending',
-                            evidence: null // Borra la evidencia anterior para forzar una nueva subida
-                        });
-                        alert("Evidencia rechazada. El supervisado deberá subir una nueva.");
-                    }
+            // --- CORRECCIÓN MEJORADA ---
+            if (taskData.taskType === 'weekly-penalty') {
+                await updateDocument('tasks', taskId, { status: 'rejected' });
+                alert("Evidencia rechazada. Ahora puedes notificar a un tercero.");
+            } else {
+                const isConfirmed = confirm("¿Estás seguro de que quieres rechazar esta evidencia? La tarea volverá al estado 'pendiente' para que se pueda subir una nueva evidencia.");
+                if (isConfirmed) {
+                    await updateDocument('tasks', taskId, {
+                        status: 'pending',
+                        evidence: null // Borra la evidencia anterior para forzar una nueva subida
+                    });
+                    alert("Evidencia rechazada. El supervisado deberá subir una nueva.");
                 }
-            } catch (error) {
-                console.error("Error al rechazar la tarea:", error);
-                alert("Hubo un error al intentar rechazar la tarea. Por favor, revisa la consola.");
             }
-        // ===============================================================
-        // FIN DE LA CORRECCIÓN
-        // ===============================================================
+            // --- FIN DE LA CORRECCIÓN ---
         } else if (e.target.classList.contains('evidence-btn')) {
             currentTaskId = taskId;
             openCamera();
@@ -1176,6 +1162,8 @@ onAuthState(async (user) => {
             loadTasksForSelectedDate();
             console.log('Usuario autenticado:', user.email, 'Rol:', currentUserProfile.role);
 
+            // --- CÓDIGO DE NOTIFICACIONES DESACTIVADO ---
+            /*
             // Si el usuario es supervisor, solicita permiso para notificaciones
             if (currentUserProfile.role === 'supervisor') {
                 requestNotificationPermission();
@@ -1187,7 +1175,7 @@ onAuthState(async (user) => {
                 // Muestra una alerta simple, pero podrías implementar un toast o banner más elegante
                 alert(`Notificación: ${payload.notification.title}\n\n${payload.notification.body}`);
             });
-
+            */
         } else {
             console.error('No se pudo cargar el perfil del usuario');
         }
