@@ -1,6 +1,7 @@
 /* ======================================================================
    ARCHIVO COMPLETO Y ACTUALIZADO: css/style.css
-   Nueva paleta de colores elegantes y profesionales.
+   SOLUCIÓN: Se añade una regla para que el texto de los comentarios
+   sea legible en las tareas completadas.
    ====================================================================== */
 
 /* --- Variables de Colores y Fuentes --- */
@@ -385,6 +386,13 @@ main {
     font-size: 0.9em;
 }
 
+/* ========== INICIO DE LA CORRECCIÓN ========== */
+/* Devuelve el color de texto original a los comentarios dentro de una tarea completada */
+.task-card.task-completed .task-comment {
+    color: var(--text-color);
+}
+/* ========== FIN DE LA CORRECCIÓN ========== */
+
 /* ===============================================================
   Estilos para Modales y Formularios
   =============================================================== */
@@ -417,7 +425,6 @@ main {
     overflow-y: auto;
 }
 
-/* FIX: Elimina la barra de desplazamiento horizontal */
 #add-task-modal-content {
     overflow-y: hidden;
     overflow-x: hidden;
@@ -490,7 +497,7 @@ main {
 
 .form-group {
     margin-bottom: 15px;
-    text-align: left; /* Alinea los elementos a la izquierda para mejor estética */
+    text-align: left;
 }
 
 .modal input[type="text"],

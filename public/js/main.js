@@ -1,7 +1,7 @@
 // ======================================================================
 // ARCHIVO COMPLETO Y CORREGIDO: js/main.js
-// La lógica sigue siendo la misma, separando penalidades y tareas.
-// El cambio de posición se maneja directamente en el archivo HTML.
+// SOLUCIÓN FINAL: Se sincronizan los rangos de tiempo de los reportes
+// con la lógica de visualización de la UI para evitar discrepancias.
 // ======================================================================
 
 // --- IMPORTACIONES ---
@@ -27,9 +27,6 @@ import {
 import { renderTask } from './ui/components.js';
 import { uploadImage } from './services/cloudinary.js';
 import { getSecureTime } from './services/time.js';
-// Se comenta la importación de notificaciones ya que no se usará
-// import { getToken, onMessage } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-messaging.js";
-// import { messaging } from './config/firebase-config.js';
 
 // --- SELECCIÓN DE ELEMENTOS DEL DOM ---
 const authView = document.getElementById('auth-view');
@@ -46,11 +43,9 @@ const cameraFeed = document.getElementById('camera-feed');
 const photoCanvas = document.getElementById('photo-canvas');
 const captureButton = document.getElementById('capture-button');
 const uploadButton = document.getElementById('upload-button');
-const switchCameraButton = document.getElementById('switch-camera-button'); // Nuevo
+const switchCameraButton = document.getElementById('switch-camera-button');
 const commentModal = document.getElementById('comment-modal');
 const commentForm = document.getElementById('comment-form');
-
-// ELEMENTOS PARA EL REPORTE DIARIO
 const generateReportButton = document.getElementById('generate-report-button');
 const reportModal = document.getElementById('report-modal');
 const reportContent = document.getElementById('report-content');
@@ -60,46 +55,31 @@ const reportActions = document.getElementById('report-actions');
 const assignRewardButton = document.getElementById('assign-reward-button');
 const rewardModal = document.getElementById('reward-modal');
 const rewardForm = document.getElementById('reward-form');
-
-// ELEMENTOS PARA REPORTES DE JORNADA
 const generateMorningReportButton = document.getElementById('generate-morning-report-button');
 const generateAfternoonReportButton = document.getElementById('generate-afternoon-report-button');
-
-// ELEMENTOS PARA LA PENALIDAD
 const penaltyActions = document.getElementById('penalty-actions');
 const penaltyForm = document.getElementById('penalty-form');
-
-// ELEMENTOS PARA EL REPORTE SEMANAL
 const generateWeeklyReportButton = document.getElementById('generate-weekly-report-button');
 const weeklyReportModal = document.getElementById('weekly-report-modal');
 const weeklyReportContent = document.getElementById('weekly-report-content');
 const closeWeeklyReportButton = document.getElementById('close-weekly-report-button');
 const weeklyReportActions = document.getElementById('weekly-report-actions');
-
-// ELEMENTOS PARA EL FILTRO DE FECHA
 const dateFilter = document.getElementById('date-filter');
 const todayButton = document.getElementById('today-button');
 const selectedDateText = document.getElementById('selected-date-text');
-
-// ELEMENTOS PARA NEGOCIACIÓN
 const negotiationModal = document.getElementById('negotiation-modal');
 const negotiationForm = document.getElementById('negotiation-form');
 const negotiationModalTitle = document.getElementById('negotiation-modal-title');
 const supervisorRejectionModal = document.getElementById('supervisor-rejection-options-modal');
 const restoreOriginalPenaltyBtn = document.getElementById('restore-original-penalty-btn');
 const proposeNewPenaltyBtn = document.getElementById('propose-new-penalty-btn');
-
-// ELEMENTOS PARA LA ASISTENCIA DE IA
 const aiAssistanceModal = document.getElementById('ai-assistance-modal');
 const aiPromptContainer = document.getElementById('ai-prompt-container');
 const finalPenaltyForm = document.getElementById('final-penalty-form');
-const copyPromptButton = document.getElementById('copy-prompt-button'); // Elemento añadido
-
-// ELEMENTOS PARA RESTABLECER CONTRASEÑA
+const copyPromptButton = document.getElementById('copy-prompt-button');
 const forgotPasswordLink = document.getElementById('forgot-password-link');
 const forgotPasswordModal = document.getElementById('forgot-password-modal');
 const forgotPasswordForm = document.getElementById('forgot-password-form');
-
 
 // --- VARIABLES GLOBALES ---
 let currentUser = null;
@@ -113,42 +93,9 @@ let negotiationContext = {
     taskId: null,
     isSupervisorCounter: false
 };
-let currentFacingMode = 'user'; // 'user' para frontal, 'environment' para trasera
-
-
-// --- FUNCIÓN PARA SOLICITAR PERMISO DE NOTIFICACIONES (DESACTIVADA) ---
-/*
-const requestNotificationPermission = async () => {
-    console.log('Solicitando permiso para notificaciones...');
-    try {
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-            console.log('Permiso de notificación concedido.');
-            // Obtenemos el token del dispositivo usando la clave pública VAPID
-            const token = await getToken(messaging, { vapidKey: 'BEAPqyLnIDLJZQ7QgKx0C6JK4pAMUz0wZTjn4JnUJR_bJcy4AgwRb_v9p4rhGzOKayZFQwQAMBPVl9OYbfRrMjs' });
-            if (token) {
-                console.log('Token del dispositivo:', token);
-                // Si el usuario es supervisor, guardamos el token en su perfil de Firestore
-                if (currentUserProfile && currentUserProfile.role === 'supervisor') {
-                    await updateDocument('users', currentUser.uid, { fcmToken: token });
-                }
-            } else {
-                console.log('No se pudo obtener el token de registro.');
-            }
-        } else {
-            console.log('No se pudo obtener el permiso para notificar.');
-        }
-    } catch (error) {
-        console.error('Ocurrió un error al solicitar el permiso:', error);
-    }
-};
-*/
+let currentFacingMode = 'user';
 
 // --- FUNCIONES AUXILIARES PARA FECHAS ---
-
-/**
- * Formatea una fecha para mostrarla de manera legible
- */
 const formatDateForDisplay = (date) => {
     const options = {
         weekday: 'long',
@@ -159,9 +106,6 @@ const formatDateForDisplay = (date) => {
     return date.toLocaleDateString('es-ES', options);
 };
 
-/**
- * Formatea una fecha para el input de tipo date, respetando la zona horaria local.
- */
 const formatDateForInput = (date) => {
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
@@ -169,43 +113,26 @@ const formatDateForInput = (date) => {
     return `${year}-${month}-${day}`;
 };
 
-/**
- * Actualiza la visualización de la fecha seleccionada
- */
 const updateSelectedDateDisplay = () => {
     selectedDateText.textContent = formatDateForDisplay(selectedDate);
     dateFilter.value = formatDateForInput(selectedDate);
 };
 
-/**
- * Obtiene los límites de la semana (Domingo 00:00:00.000 a Viernes 23:59:59.999)
- * @param {Date} date - Una fecha dentro de la semana.
- * @returns {object} - Objeto con startOfWeek y endOfWeek.
- */
 const getWeekLimits = (date) => {
     const day = date.getDay();
-
     const startOfWeek = new Date(date);
     startOfWeek.setDate(date.getDate() - day);
     startOfWeek.setHours(0, 0, 0, 0);
-
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 5);
     endOfWeek.setHours(23, 59, 59, 999);
-
     return { startOfWeek, endOfWeek };
 };
 
-/**
- * Carga las tareas para la fecha seleccionada
- */
 const loadTasksForSelectedDate = () => {
     if (unsubscribe) unsubscribe();
-
     if (!currentUser || !currentUser.uid || !currentUserProfile) return;
-
     console.log('Cargando tareas para fecha:', selectedDate);
-
     if (currentUserProfile.role === 'supervisor') {
         const supervisedId = currentUserProfile.supervisingId;
         if (supervisedId) {
@@ -220,10 +147,6 @@ const loadTasksForSelectedDate = () => {
 };
 
 // --- FUNCIONES PRINCIPALES ---
-
-/**
- * Muestra las tareas en los contenedores correspondientes, agrupadas por estado.
- */
 const displayTasks = async (tasks) => {
     const containers = {
         'penalties-list': { element: document.getElementById('penalties-list'), content: [], emptyMessage: `<div class="task-card empty-message" style="text-align: center; color: #666; font-style: italic;">No hay penalidades asignadas para este día.</div>` },
@@ -249,25 +172,17 @@ const displayTasks = async (tasks) => {
 
     tasks.forEach(task => {
         const taskHTML = renderTask(task, currentUserProfile.role, now);
-
         if (task.taskType === 'penalty' || task.taskType === 'weekly-penalty') {
             containers['penalties-list'].content.push(taskHTML);
         } else {
             const deadlineHour = task.deadline?.toDate().getHours() || 12;
             const isCompleted = task.status === 'completed' || task.status === 'validated';
-
             if (deadlineHour < 14) {
-                if (isCompleted) {
-                    containers['morning-tasks-completed'].content.push(taskHTML);
-                } else {
-                    containers['morning-tasks-pending'].content.push(taskHTML);
-                }
+                if (isCompleted) containers['morning-tasks-completed'].content.push(taskHTML);
+                else containers['morning-tasks-pending'].content.push(taskHTML);
             } else {
-                if (isCompleted) {
-                    containers['afternoon-tasks-completed'].content.push(taskHTML);
-                } else {
-                    containers['afternoon-tasks-pending'].content.push(taskHTML);
-                }
+                if (isCompleted) containers['afternoon-tasks-completed'].content.push(taskHTML);
+                else containers['afternoon-tasks-pending'].content.push(taskHTML);
             }
         }
     });
@@ -275,7 +190,6 @@ const displayTasks = async (tasks) => {
     for (const key in containers) {
         containers[key].element.innerHTML = containers[key].content.length > 0 ? containers[key].content.join('') : containers[key].emptyMessage;
     }
-
 
     tasks.forEach(task => {
         const commentsContainer = document.querySelector(`.task-card[data-id="${task.id}"] .task-comments-container`);
@@ -295,27 +209,19 @@ const displayTasks = async (tasks) => {
     });
 };
 
-
-/**
- * Abre la cámara para tomar fotos
- */
 const openCamera = async () => {
     try {
-        // --- LÓGICA DE CÁMARA MEJORADA ---
         const devices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = devices.filter(device => device.kind === 'videoinput');
-
         if (videoDevices.length > 1) {
             switchCameraButton.classList.remove('hidden');
         }
-
         const constraints = {
             video: {
                 facingMode: { ideal: currentFacingMode }
             },
             audio: false
         };
-
         stream = await navigator.mediaDevices.getUserMedia(constraints);
         cameraFeed.srcObject = stream;
         cameraModal.classList.remove('hidden');
@@ -325,9 +231,6 @@ const openCamera = async () => {
     }
 };
 
-/**
- * Cambia entre la cámara frontal y trasera.
- */
 const switchCamera = () => {
     if (stream) {
         stream.getTracks().forEach(track => track.stop());
@@ -336,10 +239,6 @@ const switchCamera = () => {
     openCamera();
 };
 
-
-/**
- * Cierra la cámara y detiene el stream
- */
 const closeCamera = () => {
     if (stream) {
         stream.getTracks().forEach(track => track.stop());
@@ -349,39 +248,28 @@ const closeCamera = () => {
     captureButton.style.display = 'inline-block';
     uploadButton.classList.add('hidden');
     switchCameraButton.classList.add('hidden');
-    currentFacingMode = 'user'; // Resetea a la cámara frontal por defecto
+    currentFacingMode = 'user';
 };
 
-/**
- * Captura una foto de la cámara
- */
 const capturePhoto = () => {
     const canvas = photoCanvas;
     const context = canvas.getContext('2d');
-
     canvas.width = cameraFeed.videoWidth;
     canvas.height = cameraFeed.videoHeight;
     context.drawImage(cameraFeed, 0, 0);
-
     captureButton.style.display = 'none';
     uploadButton.classList.remove('hidden');
     switchCameraButton.classList.add('hidden');
 };
 
-/**
- * Sube la evidencia capturada
- */
 const uploadEvidence = async () => {
     const canvas = photoCanvas;
-
     canvas.toBlob(async (blob) => {
         const imageUrl = await uploadImage(blob);
-
         if (imageUrl && currentTaskId) {
             const taskDoc = await getTaskById(currentTaskId);
             if (!taskDoc.exists()) return;
             const taskData = taskDoc.data();
-
             if (taskData.taskType === 'weekly-penalty') {
                 const evidence = taskData.evidence || [];
                 evidence.push({ url: imageUrl, uploadedAt: new Date() });
@@ -395,7 +283,6 @@ const uploadEvidence = async () => {
                     status: 'completed'
                 });
             }
-
             alert("Evidencia subida exitosamente");
             closeCamera();
             currentTaskId = null;
@@ -405,32 +292,23 @@ const uploadEvidence = async () => {
     }, 'image/jpeg', 0.8);
 };
 
-/**
- * Asigna la penalidad semanal automáticamente si una penalidad diaria no se cumple.
- * @param {Date} currentDate - La fecha segura actual para basar los cálculos.
- */
 const assignWeeklyPenalty = async (currentDate) => {
     if (!currentUser || !currentUserProfile || !currentUserProfile.supervisingId) {
         console.error("No se puede asignar la penalidad: falta información del usuario o del supervisado.");
         return;
     }
-
     const alreadyExists = await getExistingWeeklyPenalty(currentUserProfile.supervisingId, currentDate);
     if (alreadyExists) {
         console.log("Ya existe una penalidad semanal para este fin de semana.");
         return;
     }
-
-    const dayOfWeek = currentDate.getDay(); // 0 (Sun) to 6 (Sat)
-
+    const dayOfWeek = currentDate.getDay();
     const saturday = new Date(currentDate);
     saturday.setDate(currentDate.getDate() + (6 - dayOfWeek));
     saturday.setHours(0, 0, 0, 0);
-
     const sunday = new Date(saturday);
     sunday.setDate(saturday.getDate() + 1);
     sunday.setHours(0, 0, 0, 0);
-
     const basePenaltyData = {
         title: "Penalidad Semanal Impuesta",
         description: "Realizar todas las labores del hogar. Debe subir al menos 7 fotos como evidencia cada día (sábado y domingo).",
@@ -441,7 +319,6 @@ const assignWeeklyPenalty = async (currentDate) => {
         taskType: 'weekly-penalty',
         evidence: []
     };
-
     try {
         await createTask({ ...basePenaltyData, deadline: saturday, day: 'saturday' });
         await createTask({ ...basePenaltyData, deadline: sunday, day: 'sunday' });
@@ -452,11 +329,6 @@ const assignWeeklyPenalty = async (currentDate) => {
     }
 };
 
-
-/**
- * Genera el reporte para una jornada específica (mañana o tarde)
- * y verifica si se debe aplicar la penalidad semanal automática.
- */
 const generateJornadaReport = async (jornada) => {
     if (!currentUser || !currentUserProfile) return;
 
@@ -464,25 +336,38 @@ const generateJornadaReport = async (jornada) => {
     const startOfDay = new Date(selectedDate);
     startOfDay.setHours(0, 0, 0, 0);
 
-    let startTime, endTime, reportTitle, isDefinitive;
+    let startTime, endTime, reportTitle, isDefinitive, tasks;
 
+    // ========== INICIO DE LA CORRECCIÓN DE RANGOS DE TIEMPO ==========
     if (jornada === 'morning') {
         startTime = startOfDay;
         endTime = new Date(selectedDate);
-        endTime.setHours(12, 0, 0, 0);
+        endTime.setHours(13, 59, 59, 999); // Todo antes de las 2:00 PM
         reportTitle = "Reporte de Jornada - Mañana";
-        isDefinitive = now >= endTime;
-    } else {
+        isDefinitive = now.getHours() >= 14;
+    } else { // tarde
         startTime = new Date(selectedDate);
-        startTime.setHours(12, 0, 0, 1);
+        startTime.setHours(14, 0, 0, 0); // Todo desde las 2:00 PM
         endTime = new Date(selectedDate);
-        endTime.setHours(17, 0, 0, 0);
+        endTime.setHours(23, 59, 59, 999); // Hasta el final del día
         reportTitle = "Reporte de Jornada - Tarde";
-        isDefinitive = now >= endTime;
+        const endOfDay = new Date(selectedDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        isDefinitive = now >= endOfDay;
     }
+    // ========== FIN DE LA CORRECCIÓN DE RANGOS DE TIEMPO ==========
 
     try {
-        const tasks = await getTasksForTimeRange(currentUser.uid, startTime, endTime, currentUserProfile.role === 'supervisor');
+        const userIdForReport = currentUserProfile.role === 'supervisor'
+            ? currentUserProfile.supervisingId
+            : currentUser.uid;
+
+        if (currentUserProfile.role === 'supervisor' && !userIdForReport) {
+            alert("Error: No hay un usuario supervisado asignado a tu perfil.");
+            return;
+        }
+        
+        tasks = await getTasksForTimeRange(userIdForReport, startTime, endTime, false);
 
         if (isDefinitive && currentUserProfile.role === 'supervisor') {
             const uncompletedPenalty = tasks.find(task =>
@@ -535,33 +420,27 @@ const generateJornadaReport = async (jornada) => {
     }
 };
 
-
-/**
- * Genera el reporte del día seleccionado
- */
 const generateReport = async () => {
     if (!currentUser || !currentUserProfile) return;
-
     let tasks = [];
-
     try {
-        if (currentUserProfile.role === 'supervisor') {
-            tasks = await getAssignedTasksForDate(currentUser.uid, selectedDate);
-        } else {
-            tasks = await getTasksForReport(currentUser.uid, selectedDate);
+        const userIdForReport = currentUserProfile.role === 'supervisor' 
+            ? currentUserProfile.supervisingId 
+            : currentUser.uid;
+        if (currentUserProfile.role === 'supervisor' && !userIdForReport) {
+            alert("Error: No hay un usuario supervisado asignado a tu perfil.");
+            return;
         }
+        tasks = await getTasksForReport(userIdForReport, selectedDate);
 
         const totalTasks = tasks.length;
         const completedTasks = tasks.filter(t => t.status === 'completed' || t.status === 'validated').length;
         const mandatoryTasks = tasks.filter(t => t.isMandatory);
         const completedMandatory = mandatoryTasks.filter(t => t.status === 'completed' || t.status === 'validated').length;
         const unfulfilledMandatory = mandatoryTasks.filter(t => t.status !== 'completed' && t.status !== 'validated');
-
         const percentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
         const canReceiveReward = unfulfilledMandatory.length === 0 && percentage >= 80;
-
         reportModalTitle.textContent = "Reporte de Cumplimiento Diario";
-
         let reportHTML = `
             <div class="report-stat">
                 Fecha del reporte: <span>${formatDateForDisplay(selectedDate)}</span>
@@ -576,24 +455,18 @@ const generateReport = async () => {
                 Tareas obligatorias completadas: <span>${completedMandatory} / ${mandatoryTasks.length}</span>
             </div>
         `;
-
         if (currentUserProfile.role === 'supervisor') {
-            if (canReceiveReward) {
-                reportActions.classList.remove('hidden');
-            } else {
-                reportActions.classList.add('hidden');
-            }
+            if (canReceiveReward) reportActions.classList.remove('hidden');
+            else reportActions.classList.add('hidden');
             penaltyActions.classList.add('hidden');
         } else {
             reportActions.classList.add('hidden');
             penaltyActions.classList.add('hidden');
         }
-
         reportContent.innerHTML = reportHTML;
         reportModal.classList.remove('hidden');
-
         const reportData = {
-            userId: currentUserProfile.role === 'supervisor' ? currentUser.uid : currentUser.uid,
+            userId: userIdForReport,
             date: selectedDate,
             totalTasks,
             completedTasks,
@@ -603,38 +476,33 @@ const generateReport = async () => {
             canReceiveReward,
             createdAt: new Date()
         };
-
         currentReportId = await saveDailyReport(reportData);
-
     } catch (error) {
         console.error("Error generando el reporte:", error);
         alert("Error al generar el reporte");
     }
 };
 
-/**
- * Genera el reporte semanal
- */
 const generateWeeklyReport = async () => {
     if (!currentUser || !currentUserProfile) return;
-
     const today = await getSecureTime();
     const isSaturday = today.getDay() === 6;
     const isSupervisor = currentUserProfile.role === 'supervisor';
     let tasks = [];
-
     try {
-        tasks = await getTasksForWeeklyReport(currentUser.uid, selectedDate, isSupervisor);
-
+        const userIdForReport = isSupervisor ? currentUserProfile.supervisingId : currentUser.uid;
+        if (isSupervisor && !userIdForReport) {
+            alert("Error: No hay un usuario supervisado asignado a tu perfil.");
+            return;
+        }
+        tasks = await getTasksForWeeklyReport(userIdForReport, selectedDate, false);
         const totalTasks = tasks.length;
         const completedTasks = tasks.filter(t => t.status === 'completed' || t.status === 'validated').length;
         const percentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-
         const { startOfWeek, endOfWeek } = getWeekLimits(selectedDate);
         const dateOptions = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' };
         const startDateDisplay = startOfWeek.toLocaleDateString('es-ES', dateOptions);
         const endDateDisplay = endOfWeek.toLocaleDateString('es-ES', dateOptions);
-
         let reportHTML = `
             <div class="report-stat">
                 Semana: <span>${startDateDisplay.split(',')[0]} - ${endDateDisplay.split(',')[0]}</span>
@@ -649,7 +517,6 @@ const generateWeeklyReport = async () => {
                 Porcentaje de cumplimiento: <span>${percentage}%</span>
             </div>
         `;
-
         if (isSaturday && percentage < 80 && isSupervisor) {
             await assignWeeklyPenalty(today);
             reportHTML += `
@@ -666,23 +533,17 @@ const generateWeeklyReport = async () => {
                     <p>Has superado el 80% de cumplimiento semanal. No hay penalidad y se considera un buen esfuerzo.</p>
                 </div>`;
         }
-
         weeklyReportContent.innerHTML = reportHTML;
         weeklyReportModal.classList.remove('hidden');
-
     } catch (error) {
         console.error("Error generando el reporte semanal:", error);
         alert("Error al generar el reporte semanal");
     }
 };
 
-/**
- * Maneja la asignación de recompensas
- */
 const handleRewardAssignment = async (e) => {
     e.preventDefault();
     const rewardText = document.getElementById('reward-text').value;
-
     if (currentReportId && rewardText.trim()) {
         await updateDocument('dailyReports', currentReportId, {
             reward: rewardText,
@@ -695,16 +556,11 @@ const handleRewardAssignment = async (e) => {
     }
 };
 
-/**
- * Maneja la sugerencia de una nueva penalidad
- */
 const handlePenaltySuggestion = async (e) => {
     e.preventDefault();
-
     try {
         const assignedTasks = await getAssignedTasksForDate(currentUser.uid, selectedDate);
         const penaltiesCount = assignedTasks.filter(task => task.taskType === 'penalty' || task.taskType === 'weekly-penalty').length;
-
         if (penaltiesCount >= 3) {
             alert("No se pueden imponer más de 3 penalidades por día.");
             return;
@@ -714,7 +570,6 @@ const handlePenaltySuggestion = async (e) => {
         alert("Error al verificar el límite de penalidades. No se creará la penalidad.");
         return;
     }
-
     const title = document.getElementById('penalty-title').value;
     const description = document.getElementById('penalty-description').value;
     const deadline = document.getElementById('penalty-deadline').value;
@@ -749,15 +604,11 @@ const handlePenaltySuggestion = async (e) => {
     }
 };
 
-/**
- * Maneja el envío del formulario de negociación
- */
 const handleNegotiation = async (e) => {
     e.preventDefault();
     const title = document.getElementById('negotiation-title').value;
     const description = document.getElementById('negotiation-description').value;
     const { taskId, isSupervisorCounter } = negotiationContext;
-
     const taskDoc = await getTaskById(taskId);
     if (!taskDoc.exists()) {
         alert("La tarea ya no existe.");
@@ -767,7 +618,6 @@ const handleNegotiation = async (e) => {
     const proposalCounts = taskData.proposalCounts || { supervisor: 0, supervised: 0 };
     const negotiationHistory = taskData.negotiationHistory || [];
     const userRole = currentUserProfile.role;
-
     if (taskId && title && description) {
         const newProposal = {
             proposer: userRole,
@@ -775,7 +625,6 @@ const handleNegotiation = async (e) => {
             description,
             date: new Date(),
         };
-
         if (isSupervisorCounter) {
             await updateDocument('tasks', taskId, {
                 title, description, status: 'pending_acceptance', counterProposal: null,
@@ -804,24 +653,18 @@ const handleNegotiation = async (e) => {
     }
 };
 
-/**
- * Muestra el modal de asistencia de IA solo al supervisor, con un prompt mejorado y robusto.
- */
 const showAIAssistanceModal = (task, taskId) => {
     if (currentUserProfile.role !== 'supervisor') {
         alert("Se ha alcanzado el límite de propuestas. El supervisor definirá la penalidad final.");
         return;
     }
-
     let prompt = `Como mediador experto en resolución de conflictos, tu objetivo es proponer una penalidad final que sea justa, equitativa y constructiva. Ambas partes, supervisor y supervisado, han llegado a un punto muerto en su negociación.
 
 A continuación se presenta el historial completo de la negociación. Analiza cuidadosamente cada propuesta, considerando las responsabilidades y los puntos de vista implícitos.
 
 **Historial de Negociación:**
 `;
-
     const history = task.negotiationHistory || [];
-
     if (history.length > 0) {
         history.forEach((proposal, index) => {
             const proposerRole = proposal.proposer === 'supervisor' ? 'Supervisor' : 'Supervisado';
@@ -838,7 +681,6 @@ A continuación se presenta el historial completo de la negociación. Analiza cu
     } else {
         prompt += "\nNo hay propuestas anteriores en el historial.\n";
     }
-
     prompt += `
 **Tu Tarea:**
 Basado en el historial, redacta una **penalidad final y definitiva**. Tu propuesta debe:
@@ -851,7 +693,6 @@ Basado en el historial, redacta una **penalidad final y definitiva**. Tu propues
 - **Descripción Detallada:** [Tu descripción completa y clara de la penalidad]
 - **Justificación:** [Una breve explicación de por qué esta penalidad es la más adecuada, considerando el historial]
 `;
-
     aiPromptContainer.textContent = prompt;
     aiAssistanceModal.classList.remove('hidden');
     negotiationContext.taskId = taskId;
@@ -862,7 +703,6 @@ const handleFinalPenalty = async (e) => {
     const title = document.getElementById('final-penalty-title').value;
     const description = document.getElementById('final-penalty-description').value;
     const { taskId } = negotiationContext;
-
     if (taskId && title && description) {
         await updateDocument('tasks', taskId, {
             title,
@@ -877,19 +717,12 @@ const handleFinalPenalty = async (e) => {
     }
 };
 
-/**
- * Maneja la creación de nuevas tareas
- */
 const handleTaskCreation = async (e) => {
     e.preventDefault();
-
     if (currentUserProfile.role === 'supervisado') {
         const isConfirmed = confirm("¿Estás seguro de que quieres crear esta tarea? Una vez creada, el proceso es irreversible y quedará registrada.");
-        if (!isConfirmed) {
-            return;
-        }
+        if (!isConfirmed) return;
     }
-
     const title = document.getElementById('task-title').value;
     const description = document.getElementById('task-description').value;
     const deadline = document.getElementById('task-deadline').value;
@@ -916,9 +749,6 @@ const handleTaskCreation = async (e) => {
     }
 };
 
-/**
- * Maneja el login de usuarios
- */
 const handleLogin = async (e) => {
     e.preventDefault();
     const email = document.getElementById('login-email').value;
@@ -944,12 +774,9 @@ const handleForgotPassword = async (e) => {
     }
 };
 
-
 // --- EVENT LISTENERS ---
-
 document.addEventListener('DOMContentLoaded', () => {
     updateSelectedDateDisplay();
-
     loginForm.addEventListener('submit', handleLogin);
     logoutButton.addEventListener('click', logout);
     addTaskForm.addEventListener('submit', handleTaskCreation);
@@ -959,7 +786,6 @@ document.addEventListener('DOMContentLoaded', () => {
     finalPenaltyForm.addEventListener('submit', handleFinalPenalty);
     forgotPasswordForm.addEventListener('submit', handleForgotPassword);
 
-    // --- NUEVO EVENTO PARA EL BOTÓN DE COPIAR ---
     if (copyPromptButton) {
         copyPromptButton.addEventListener('click', () => {
             const promptText = aiPromptContainer.textContent;
@@ -975,7 +801,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     }
-    // --- FIN DEL NUEVO EVENTO ---
 
     commentForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -1007,7 +832,7 @@ document.addEventListener('DOMContentLoaded', () => {
     addTaskButton.addEventListener('click', () => addTaskModal.classList.remove('hidden'));
     captureButton.addEventListener('click', capturePhoto);
     uploadButton.addEventListener('click', uploadEvidence);
-    switchCameraButton.addEventListener('click', switchCamera); // Nuevo
+    switchCameraButton.addEventListener('click', switchCamera);
     if(generateReportButton) {
         generateReportButton.addEventListener('click', generateReport);
     }
@@ -1017,7 +842,6 @@ document.addEventListener('DOMContentLoaded', () => {
     assignRewardButton.addEventListener('click', () => rewardModal.classList.remove('hidden'));
     generateWeeklyReportButton.addEventListener('click', generateWeeklyReport);
     closeWeeklyReportButton.addEventListener('click', () => weeklyReportModal.classList.add('hidden'));
-
     forgotPasswordLink.addEventListener('click', (e) => {
         e.preventDefault();
         forgotPasswordModal.classList.remove('hidden');
@@ -1036,7 +860,6 @@ document.addEventListener('DOMContentLoaded', () => {
     appView.addEventListener('click', async (e) => {
         const taskCard = e.target.closest('.task-card');
         if (!taskCard) return;
-
         const taskId = taskCard.dataset.id;
         const taskDoc = await getTaskById(taskId);
         if (!taskDoc.exists()) return;
@@ -1046,7 +869,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.classList.contains('validate-btn')) {
             await updateDocument('tasks', taskId, { status: 'validated' });
         } else if (e.target.classList.contains('reject-btn')) {
-            // --- CORRECCIÓN MEJORADA ---
             if (taskData.taskType === 'weekly-penalty') {
                 await updateDocument('tasks', taskId, { status: 'rejected' });
                 alert("Evidencia rechazada. Ahora puedes notificar a un tercero.");
@@ -1055,12 +877,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (isConfirmed) {
                     await updateDocument('tasks', taskId, {
                         status: 'pending',
-                        evidence: null // Borra la evidencia anterior para forzar una nueva subida
+                        evidence: null
                     });
                     alert("Evidencia rechazada. El supervisado deberá subir una nueva.");
                 }
             }
-            // --- FIN DE LA CORRECCIÓN ---
         } else if (e.target.classList.contains('evidence-btn')) {
             currentTaskId = taskId;
             openCamera();
@@ -1158,9 +979,7 @@ onAuthState(async (user) => {
     if (user) {
         currentUser = user;
         currentUserProfile = await getUserProfile(user.uid);
-
         console.log("Perfil de usuario cargado:", currentUserProfile);
-
         if (currentUserProfile) {
             userEmail.textContent = user.email;
             userInfo.classList.remove('hidden');
@@ -1168,21 +987,6 @@ onAuthState(async (user) => {
             appView.classList.remove('hidden');
             loadTasksForSelectedDate();
             console.log('Usuario autenticado:', user.email, 'Rol:', currentUserProfile.role);
-
-            // --- CÓDIGO DE NOTIFICACIONES DESACTIVADO ---
-            /*
-            // Si el usuario es supervisor, solicita permiso para notificaciones
-            if (currentUserProfile.role === 'supervisor') {
-                requestNotificationPermission();
-            }
-
-            // Escucha mensajes de notificación mientras la app está activa
-            onMessage(messaging, (payload) => {
-                console.log('Mensaje recibido en primer plano: ', payload);
-                // Muestra una alerta simple, pero podrías implementar un toast o banner más elegante
-                alert(`Notificación: ${payload.notification.title}\n\n${payload.notification.body}`);
-            });
-            */
         } else {
             console.error('No se pudo cargar el perfil del usuario');
         }
